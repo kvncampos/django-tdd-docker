@@ -1,0 +1,12 @@
+# Pull official base image
+FROM python:3.12.4-slim-bookworm
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Copy entrypoint.sh
+COPY /entrypoint.sh /usr/src/app/entrypoint.sh
+RUN chmod +x /usr/src/app/entrypoint.sh
+
+# Temporarily keep the container running for inspection
+CMD ["tail", "-f", "/dev/null"]

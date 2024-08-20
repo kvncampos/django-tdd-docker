@@ -12,8 +12,43 @@ djangorestframework = "3.15.2"
 docker = "^7.1.0"
 compose = "^1.5.0"
 invoke = "^2.2.0"
-
+psycopg2-binary = "^2.9.9"
+pytest = "^8.3.2"
+pytest-django = "4.8.0"
+ruff = "^0.6.1"
+pre-commit = "^3.8.0"
+bandit = "^1.7.9"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+skip-string-normalization = false
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | \.mypy_cache
+  | \.pytest_cache
+  | __pycache__
+  | build
+  | dist
+  | migrations
+  | app/movies/migrations  # Exclude migrations directory in movies app
+)/
+'''
+
+[tool.ruff]
+# Ruff configuration
+select = ["ALL"]
+exclude = [
+    "app/tests/*",           # Exclude tests directory
+    "app/movies/migrations/*", # Exclude migrations directory in movies app
+    "tasks.py",              # Exclude tasks.py
+    "*.pyc",                 # Exclude Python bytecode files
+    "__pycache__/",          # Exclude the __pycache__ directory
+]
+

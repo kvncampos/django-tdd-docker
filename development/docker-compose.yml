@@ -2,11 +2,28 @@ services:
   movies:
     build:
       context: ..
-      dockerfile: development/Dockerfile
+      dockerfile: development/Dockerfile.dev
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ../app:/usr/src/app
+      - ../pyproject.toml:/usr/src/app/pyproject.toml
+      - ../poetry.lock:/usr/src/app/poetry.lock
+      - ../development/entrypoint.sh:/usr/src/app/entrypoint.sh
     ports:
       - 8009:8000
     env_file:
       - ../app/.env.dev
+    depends_on:
+      - movies-db
+
+  movies-db:
+    image: postgres:16
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=movies
+      - POSTGRES_PASSWORD=movies
+      - POSTGRES_DB=movies_dev
+
+volumes:
+  postgres_data:

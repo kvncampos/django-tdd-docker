@@ -1,7 +1,9 @@
-from invoke import task
 import os
 
+from invoke import task
+
 COMPOSE_FILE = os.path.join("development", "docker-compose.yml")
+CONTAINER_NAME = "development-movies-1"
 
 
 @task
@@ -21,8 +23,8 @@ def up_detached(ctx):
 
 @task
 def debug(ctx):
-    """Start Docker containers in attached mode."""
-    ctx.run(f"docker-compose -f {COMPOSE_FILE} up", pty=True)
+    """Start Docker containers in attached mode with rebuild."""
+    ctx.run(f"docker-compose -f {COMPOSE_FILE} up --build", pty=True)
 
 
 @task
@@ -62,6 +64,12 @@ def build(ctx, no_cache=False):
 
 
 @task
+def build_no_cache(ctx):
+    """Build Docker images without using cache."""
+    ctx.run(f"docker-compose -f {COMPOSE_FILE} build --no-cache", pty=True)
+
+
+@task
 def remove_volumes(ctx):
     """Remove all Docker volumes."""
     ctx.run("docker volume prune -f", pty=True)
@@ -72,3 +80,23 @@ def destroy(ctx):
     """Stop and remove Docker containers, and remove all associated volumes."""
     ctx.run(f"docker-compose -f {COMPOSE_FILE} down -v", pty=True)
     ctx.run("docker volume prune -f", pty=True)
+
+
+@task
+def pytest(
+    ctx,
+):
+    """Run Pytests."""
+    ctx.run(f"docker exec -it {CONTAINER_NAME} pytest", pty=True)
+
+
+@task
+def cli(ctx, shell="/bin/bash"):
+    """Open a shell in the Docker container 'development-movies-1'."""
+    ctx.run(f"docker exec -it {CONTAINER_NAME} {shell}", pty=True)
+
+
+@task
+def checks(ctx):
+    """Open a shell in the Docker container 'development-movies-1'."""
+    ctx.run("pre-commit run --all-files", pty=True)

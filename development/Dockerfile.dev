@@ -1,0 +1,38 @@
+# Pull official base image
+FROM python:3.12.4-slim-bookworm
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Install system dependencies
+RUN apt-get update \
+  && apt-get -y install gcc postgresql netcat-openbsd \
+  && apt-get clean
+
+# Install Poetry
+RUN pip install --upgrade pip
+RUN pip install poetry
+
+# Copy Poetry files to a persistent location
+COPY ../pyproject.toml ./
+COPY ../poetry.lock ./
+
+# Copy entrypoint.sh to a persistent location
+COPY ../development/entrypoint.sh ./
+RUN chmod +x ./entrypoint.sh
+
+# Install dependencies
+RUN poetry config virtualenvs.create false && poetry install --no-dev
+
+# Copy the app directory
+COPY ../app ./
+
+# Expose port 8000
+EXPOSE 8000
+
+# Use entrypoint.sh to start the server
+ENTRYPOINT ["/usr/src/app/entrypoint.sh"]

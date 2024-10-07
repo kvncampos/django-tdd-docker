@@ -45,8 +45,8 @@ exclude = '''
 # Ruff configuration
 select = ["ALL"]
 exclude = [
-    "app/tests/*",           # Exclude tests directory
-    "app/movies/migrations/*", # Exclude migrations directory in movies app
+    "tests/*",           # Exclude tests directory
+    "movies/migrations/*", # Exclude migrations directory in movies app
     "tasks.py",              # Exclude tasks.py
     "*.pyc",                 # Exclude Python bytecode files
     "__pycache__/",          # Exclude the __pycache__ directory

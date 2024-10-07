@@ -16,7 +16,7 @@ def down(ctx, volumes=False):
 
 
 @task
-def up_detached(ctx):
+def start(ctx):
     """Start Docker containers in detached mode."""
     ctx.run(f"docker-compose -f {COMPOSE_FILE} up -d", pty=True)
 
@@ -25,12 +25,6 @@ def up_detached(ctx):
 def debug(ctx):
     """Start Docker containers in attached mode with rebuild."""
     ctx.run(f"docker-compose -f {COMPOSE_FILE} up --build", pty=True)
-
-
-@task
-def start(ctx):
-    """Start existing Docker containers."""
-    ctx.run(f"docker-compose -f {COMPOSE_FILE} start", pty=True)
 
 
 @task
@@ -83,17 +77,57 @@ def destroy(ctx):
 
 
 @task
-def pytest(
-    ctx,
-):
-    """Run Pytests."""
-    ctx.run(f"docker exec -it {CONTAINER_NAME} pytest", pty=True)
+def pytest(ctx, keyword=None):
+    """
+    Run Pytests.
+
+    Parameters:
+        - ctx : The context object passed by invoke.
+        - keyword (str, optional) : Keyword expression to filter tests. If provided, it uses pytest's '-k' option. Defaults to None, which runs all tests.
+    """
+    # Construct the base pytest command
+    command = f"docker exec -it {CONTAINER_NAME} pytest"
+
+    # Append the keyword expression if provided
+    if keyword:
+        command += f" -k '{keyword}'"
+
+    # Run the command
+    ctx.run(command, pty=True)
+
+
+@task
+def ruff(ctx, fix=False):
+    """Run Ruff linter recursively on all files in the current directory, optionally fixing issues."""
+    command = "ruff check ." if not fix else "ruff check --fix ."
+    ctx.run(f"docker exec -it {CONTAINER_NAME} {command}", pty=True)
+
+
+@task
+def create_superuser(ctx, fix=False):
+    """Run Ruff linter recursively on all files in the current directory, optionally fixing issues."""
+    command = "python manage.py createsuperuser"
+    ctx.run(f"docker exec -it {CONTAINER_NAME} {command}", pty=True)
 
 
 @task
 def cli(ctx, shell="/bin/bash"):
     """Open a shell in the Docker container 'development-movies-1'."""
     ctx.run(f"docker exec -it {CONTAINER_NAME} {shell}", pty=True)
+
+
+@task
+def makemigrations(ctx):
+    """Run 'python manage.py makemigrations' inside the Docker container."""
+    ctx.run(
+        f"docker exec -it {CONTAINER_NAME} python manage.py makemigrations", pty=True
+    )
+
+
+@task
+def migrate(ctx):
+    """Run 'python manage.py migrate' inside the Docker container."""
+    ctx.run(f"docker exec -it {CONTAINER_NAME} python manage.py migrate", pty=True)
 
 
 @task

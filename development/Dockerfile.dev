@@ -13,20 +13,16 @@ RUN apt-get update \
   && apt-get -y install gcc postgresql netcat-openbsd \
   && apt-get clean
 
-# Install Poetry
-RUN pip install --upgrade pip
-RUN pip install poetry
+# Copy the requirements.txt file created outside Docker
+COPY ./app/requirements.txt .
 
-# Copy Poetry files to a persistent location
-COPY ./pyproject.toml ./
+# Install dependencies using pip
+RUN pip install --no-cache-dir -r ./requirements.txt
 COPY ./poetry.lock ./
 
 # Copy entrypoint.sh to a persistent location
 COPY ../development/entrypoint.sh ./
 RUN chmod +x ./entrypoint.sh
-
-# Install dependencies
-RUN poetry config virtualenvs.create false && poetry install --no-dev
 
 # Copy the app directory
 COPY ../app ./

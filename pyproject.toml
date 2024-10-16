@@ -23,6 +23,7 @@ dj-database-url = "^2.2.0"
 python-dotenv = "^1.0.1"
 whitenoise = "^6.7.0"
 pytest-cov = "^5.0.0"
+black = "^24.10.0"
 
 [build-system]
 requires = ["poetry-core"]
@@ -49,11 +50,25 @@ exclude = '''
 [tool.ruff]
 # Ruff configuration
 select = ["ALL"]
-exclude = [
-    "tests/*",           # Exclude tests directory
-    "movies/migrations/*", # Exclude migrations directory in movies app
-    "tasks.py",              # Exclude tasks.py
-    "*.pyc",                 # Exclude Python bytecode files
-    "__pycache__/",          # Exclude the __pycache__ directory
+
+ignore = [
+    "E501",  # Ignore line-length errors (Black will handle this)
+    "E231",  # Ignore missing whitespace around operators (handled by Black)
+    "E203",  # Ignore whitespace before ':' (handled by Black)
 ]
 
+# Ruff configurations
+line-length = 88
+
+# Exclude patterns for the Docker container structure
+exclude = [
+    # Exclude any .pyc files
+    "*.pyc",
+
+    # Exclude __pycache__ directories
+    "__pycache__/",
+
+    # Adjust for the structure inside the container
+    "./tests/*",               # Exclude tests directory inside app/ in Docker
+    "movies/migrations/*",    # Exclude migrations directory inside movies app in Docker
+]

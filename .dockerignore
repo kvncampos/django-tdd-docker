@@ -6,6 +6,19 @@ __pycache__/
 # Environment variables
 .env
 
+# Exclude test coverage and reports
+app/htmlcov/
+app/.tox/
+app/.coverage
+app/.coverage.*
+app/.cache
+app/.nox/
+app/nosetests.xml
+app/coverage.xml
+app/*.cover
+app/*.py,cover
+app/db.sqlite3
+
 # Local development settings
 settings_local.py
 

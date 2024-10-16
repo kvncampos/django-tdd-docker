@@ -1,9 +1,12 @@
-from pathlib import Path
-import subprocess
 import os
+import subprocess
+import time
+from pathlib import Path
+
 from dotenv import load_dotenv
 from invoke import task
-import time
+
+# LOGIN TO HEROKU BEFORE STARTING ANY HEROKU TASKS
 
 # Load environment variables from .env file
 load_dotenv()
@@ -26,11 +29,11 @@ def heroku_cli(c):
     c.run(command)
 
 
-import time
-import re
-from invoke import task
-from dotenv import load_dotenv
 import os
+import re
+
+from dotenv import load_dotenv
+from invoke import task
 
 # Load environment variables from .env file
 load_dotenv()
@@ -48,26 +51,26 @@ def wait_for_postgres_creation(c, addon_name):
     while attempt < max_attempts:
         attempt += 1
         print(
-            f"Checking PostgreSQL {addon_name} creation status... (Attempt {attempt}/{max_attempts})"
+            f"Checking PostgreSQL {addon_name} creation status... (Attempt {attempt}/{max_attempts})",
         )
 
         # Check the add-on status using heroku addons:info
         pg_info_output = c.run(
-            f"heroku addons:info {addon_name} --app {HEROKU_APP_NAME}", hide=True
+            f"heroku addons:info {addon_name} --app {HEROKU_APP_NAME}",
+            hide=True,
         ).stdout.strip()
 
         # Look for the state in the output after stripping whitespace
         if "created" in pg_info_output:
             print("PostgreSQL has been created and is ready.")
             break
-        else:
-            print("PostgreSQL is still being created. Waiting...")
+        print("PostgreSQL is still being created. Waiting...")
 
         time.sleep(delay)
 
     if attempt == max_attempts:
         raise RuntimeError(
-            f"PostgreSQL add-on {addon_name} was not created after {max_attempts} attempts."
+            f"PostgreSQL add-on {addon_name} was not created after {max_attempts} attempts.",
         )
 
 
@@ -80,7 +83,7 @@ def wait_for_heroku_ready(c):
     while attempt < max_attempts:
         attempt += 1
         print(
-            f"Checking if Heroku app and PostgreSQL are ready... (Attempt {attempt}/{max_attempts})"
+            f"Checking if Heroku app and PostgreSQL are ready... (Attempt {attempt}/{max_attempts})",
         )
 
         # Check if web dyno is up
@@ -88,14 +91,13 @@ def wait_for_heroku_ready(c):
         if "web.1: up" in ps_output:
             print("Web dyno is up.")
             break
-        else:
-            print("Web dyno is not up yet. Waiting...")
+        print("Web dyno is not up yet. Waiting...")
 
         time.sleep(delay)
 
     if attempt == max_attempts:
         raise RuntimeError(
-            "Failed to detect that Heroku app and web dyno are ready after multiple attempts."
+            "Failed to detect that Heroku app and web dyno are ready after multiple attempts.",
         )
 
 
@@ -113,7 +115,8 @@ def heroku_up(c):
 
     # Check if PostgreSQL add-on already exists
     addons_list_output = c.run(
-        f"heroku addons --app {HEROKU_APP_NAME}", hide=True
+        f"heroku addons --app {HEROKU_APP_NAME}",
+        hide=True,
     ).stdout
 
     # Look for any PostgreSQL add-on in the output
@@ -124,7 +127,7 @@ def heroku_up(c):
         # Add PostgreSQL add-on (essential-0 plan)
         print("No PostgreSQL add-on found. Creating a new PostgreSQL add-on...")
         result = c.run(
-            f"heroku addons:create heroku-postgresql:essential-0 --app {HEROKU_APP_NAME}"
+            f"heroku addons:create heroku-postgresql:essential-0 --app {HEROKU_APP_NAME}",
         )
 
         # Extract the PostgreSQL add-on name from the result
@@ -166,6 +169,21 @@ def heroku_down(c):
 
 
 @task
+def heroku_shell(c):
+    """Open a shell in the running Heroku dyno for the specified app."""
+    if not HEROKU_APP_NAME:
+        print("Error: HEROKU_APP_NAME is not set in the environment.")
+        return
+
+    print(f"Opening a shell in the Heroku dyno for app: {HEROKU_APP_NAME}...")
+
+    # Run the Heroku command to open a shell (bash) in a running dyno
+    c.run(f"heroku run bash --app {HEROKU_APP_NAME}", pty=True)
+
+    print(f"Shell session started for app: {HEROKU_APP_NAME}.")
+
+
+@task
 def heroku_destroy(c):
     """Scale up the Heroku dyno, then destroy PostgreSQL add-on"""
     if not HEROKU_APP_NAME:
@@ -173,7 +191,7 @@ def heroku_destroy(c):
         return
 
     print(
-        f"Scaling down the Heroku dyno to prepare for PostgreSQL destruction for: {HEROKU_APP_NAME}..."
+        f"Scaling down the Heroku dyno to prepare for PostgreSQL destruction for: {HEROKU_APP_NAME}...",
     )
 
     # Scale the web dyno down
@@ -181,7 +199,7 @@ def heroku_destroy(c):
 
     # Try to destroy the PostgreSQL add-on
     print(
-        f"Attempting to destroy the Heroku PostgreSQL add-on for app: {HEROKU_APP_NAME}..."
+        f"Attempting to destroy the Heroku PostgreSQL add-on for app: {HEROKU_APP_NAME}...",
     )
 
     try:
@@ -197,7 +215,7 @@ def heroku_destroy(c):
 
         if "Error ID: not_found" in combined_output:
             print(
-                f"PostgreSQL add-on for {HEROKU_APP_NAME} has already been destroyed or does not exist."
+                f"PostgreSQL add-on for {HEROKU_APP_NAME} has already been destroyed or does not exist.",
             )
         else:
             print(f"Heroku PostgreSQL add-on destroyed for app {HEROKU_APP_NAME}.")
@@ -209,11 +227,12 @@ def heroku_destroy(c):
 @task
 def export_requirements(c):
     """Export requirements.txt from poetry.lock and place it inside the ./app directory"""
-
     # Check if poetry is installed
     try:
         result = subprocess.run(
-            ["poetry", "--version"], check=True, stdout=subprocess.PIPE
+            ["poetry", "--version"],
+            check=True,
+            stdout=subprocess.PIPE,
         )
         print(result.stdout.decode("utf-8"))
     except subprocess.CalledProcessError:
@@ -231,7 +250,7 @@ def export_requirements(c):
     # Generate requirements.txt from poetry.lock
     print("Exporting requirements.txt from poetry.lock...")
     c.run(
-        f"poetry export -f requirements.txt --output {requirements_file} --without-hashes"
+        f"poetry export -f requirements.txt --output {requirements_file} --without-hashes",
     )
 
     # Verify that the requirements.txt file was created
@@ -249,7 +268,7 @@ def build_and_release_heroku(c):
         """Build the Heroku Docker image"""
         print("Building Heroku Docker image...")
         c.run(
-            f"docker buildx build --platform linux/amd64 -f development/Dockerfile.prod -t registry.heroku.com/{HEROKU_APP_NAME}/web ."
+            f"docker buildx build --platform linux/amd64 -f development/Dockerfile.prod -t registry.heroku.com/{HEROKU_APP_NAME}/web .",
         )
         print("Heroku Docker image built successfully.")
 
@@ -300,7 +319,7 @@ def run_local_heroku(c):
     c.run(command)
 
     print(
-        f"Heroku Docker container '{HEROKU_APP_NAME}' is running on port 8008 (bound to container port 8765)."
+        f"Heroku Docker container '{HEROKU_APP_NAME}' is running on port 8008 (bound to container port 8765).",
     )
 
 
@@ -397,22 +416,23 @@ def destroy(ctx):
         "warnings": "If True, warnings will be enabled. Defaults to False, which disables warnings.",
         "coverage": "If True, coverage will be run using pytest-cov. Defaults to False, which just runs the tests.",
         "coverage_report": "If True, creates coverage in html format.",
-    }
+    },
 )
 def run_tests(ctx, keyword=None, warnings=False, coverage=False, coverage_report=False):
-    """
-    Run Pytests, with optional coverage reporting.
+    """Run Pytests, with optional coverage reporting.
 
     This task allows you to run Pytests inside a Docker container, with options to enable coverage
     reporting and filter tests using keyword expressions. By default, it disables warnings unless
     warnings=True is passed.
 
-    Parameters:
+    Parameters
+    ----------
         - ctx : The context object passed by invoke.
         - keyword (str, optional) : Keyword expression to filter tests. If provided, it uses pytest's '-k' option.
                                     Defaults to None, which runs all tests.
         - warnings (bool, optional) : If True, warnings will be enabled. Defaults to False, which disables warnings.
         - coverage (bool, optional) : If True, coverage will be run using pytest-cov. Defaults to False, which just runs the tests.
+
     """
     # Construct the base pytest command
     command = f"docker exec -it {CONTAINER_NAME} pytest"
@@ -438,10 +458,116 @@ def run_tests(ctx, keyword=None, warnings=False, coverage=False, coverage_report
 
 
 @task
-def ruff(ctx, fix=False):
-    """Run Ruff linter recursively on all files in the current directory, optionally fixing issues."""
-    command = "ruff check ." if not fix else "ruff check --fix ."
-    ctx.run(f"docker exec -it {CONTAINER_NAME} {command}", pty=True)
+def open_coverage_report(ctx):
+    command = "open app/htmlcov/index.html"
+    ctx.run(command)
+
+
+@task(
+    help={
+        "path": "The directory or file to check. Defaults to the current directory ('.').",
+        "auto_format": "If True, Ruff will attempt to fix issues automatically. Defaults to False.",
+        "config_file": "Path to a Ruff configuration file (e.g., pyproject.toml). Defaults to None.",
+        "select": "Comma-separated error codes to select specific linting rules. Defaults to None (checks all rules).",
+        "ignore": "Comma-separated error codes to ignore specific linting rules. Defaults to None (does not ignore any).",
+        "verbose": "If True, Ruff will run in verbose mode. Defaults to False.",
+        "statistics": "If True, Ruff will output statistics about linting issues. Defaults to False.",
+        "exit_on_failure": "If True, the task will stop execution if any linting issues are found. Defaults to False.",
+    },
+)
+def heroku_ruff(
+    ctx,
+    path=".",
+    auto_format=False,
+    config_file=None,
+    select=None,
+    ignore=None,
+    verbose=False,
+    statistics=False,
+    exit_on_failure=False,
+):
+    """Run Ruff linter on the specified path, optionally fixing issues and applying additional configurations.
+
+    This task runs Ruff inside the specified Heroku app.
+    """
+    if not HEROKU_APP_NAME:
+        print("Error: HEROKU_APP_NAME is not set in the environment.")
+        return
+
+    # Base Ruff command
+    command = f"ruff check {path} --exclude 'tests/*'"
+
+    # Add options
+    if auto_format:
+        command += " --fix"
+
+    if config_file:
+        command += f" --config {config_file}"
+
+    if select:
+        command += f" --select {select}"
+
+    if ignore:
+        command += f" --ignore {ignore}"
+
+    if verbose:
+        command += " --verbose"
+
+    if statistics:
+        command += " --statistics"
+
+    if exit_on_failure:
+        command += " --exit-zero"
+
+    # Run the command inside Heroku container
+    ctx.run(f"heroku run '{command}' --app {HEROKU_APP_NAME}", pty=True)
+
+
+@task
+def heroku_format_code(c):
+    """Run Black for formatting and Ruff for linting/fixing inside the Heroku container."""
+    if not HEROKU_APP_NAME:
+        print("Error: HEROKU_APP_NAME is not set in the environment.")
+        return
+
+    # Run Black in Heroku container
+    print("Running Black in Heroku container...")
+    c.run(f"heroku run 'black .' --app {HEROKU_APP_NAME}", pty=True)
+
+    # Run Ruff in Heroku container
+    print("Running Ruff in Heroku container...")
+    c.run(f"heroku run 'ruff check . --fix' --app {HEROKU_APP_NAME}", pty=True)
+
+
+@task
+def local_ruff(c, path=".", auto_format=False):
+    """Run Ruff linter on the local environment, excluding specific directories.
+
+    Parameters
+    ----------
+        - c : The context object passed by invoke.
+        - path (str, optional) : The directory or file to check. Defaults to current directory.
+        - auto_format (bool, optional) : If True, Ruff will attempt to fix issues automatically. Defaults to False.
+
+    """
+    # Base Ruff command for local environment
+    command = f"ruff check {path} --exclude './app/tests/*' --exclude './app/movies/migrations/*' --exclude 'tasks.py'"
+
+    # Add auto-format option if required
+    if auto_format:
+        command += " --fix"
+
+    # Run the command
+    c.run(command, pty=True)
+
+
+@task
+def local_format_code(c):
+    """Run Black for formatting and Ruff for linting/fixing."""
+    print("Running Black...")
+    c.run("black .")
+    print("Running Ruff...")
+    c.run("ruff check . --fix")
 
 
 @task
@@ -461,7 +587,8 @@ def cli(ctx, shell="/bin/bash"):
 def makemigrations(ctx):
     """Run 'python manage.py makemigrations' inside the Docker container."""
     ctx.run(
-        f"docker exec -it {CONTAINER_NAME} python manage.py makemigrations", pty=True
+        f"docker exec -it {CONTAINER_NAME} python manage.py makemigrations",
+        pty=True,
     )
 
 

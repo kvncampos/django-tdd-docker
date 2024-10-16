@@ -1,9 +1,321 @@
+from pathlib import Path
+import subprocess
+import os
+from dotenv import load_dotenv
+from invoke import task
+import time
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Fetch HEROKU_APP_NAME from environment
+HEROKU_APP_NAME = os.getenv("HEROKU_APP_NAME")
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+COMPOSE_FILE = Path("development") / "docker-compose.yml"
+CONTAINER_NAME = "development-movies-1"
+
+
+# ----------------------------------------------------------------------
+# HEROKU TASKS
+# ----------------------------------------------------------------------
+@task
+def heroku_cli(c):
+    """Login to Heroku APP CLI Using Bash."""
+    command = f"heroku run bash --app {HEROKU_APP_NAME}"
+    c.run(command)
+
+
+import time
+import re
+from invoke import task
+from dotenv import load_dotenv
 import os
 
-from invoke import task
+# Load environment variables from .env file
+load_dotenv()
 
-COMPOSE_FILE = os.path.join("development", "docker-compose.yml")
-CONTAINER_NAME = "development-movies-1"
+# Fetch HEROKU_APP_NAME from environment
+HEROKU_APP_NAME = os.getenv("HEROKU_APP_NAME")
+
+
+def wait_for_postgres_creation(c, addon_name):
+    """Wait for PostgreSQL add-on to be fully created"""
+    max_attempts = 10
+    attempt = 0
+    delay = 30  # seconds between checks
+
+    while attempt < max_attempts:
+        attempt += 1
+        print(
+            f"Checking PostgreSQL {addon_name} creation status... (Attempt {attempt}/{max_attempts})"
+        )
+
+        # Check the add-on status using heroku addons:info
+        pg_info_output = c.run(
+            f"heroku addons:info {addon_name} --app {HEROKU_APP_NAME}", hide=True
+        ).stdout.strip()
+
+        # Look for the state in the output after stripping whitespace
+        if "created" in pg_info_output:
+            print("PostgreSQL has been created and is ready.")
+            break
+        else:
+            print("PostgreSQL is still being created. Waiting...")
+
+        time.sleep(delay)
+
+    if attempt == max_attempts:
+        raise RuntimeError(
+            f"PostgreSQL add-on {addon_name} was not created after {max_attempts} attempts."
+        )
+
+
+def wait_for_heroku_ready(c):
+    """Wait until the Heroku app and web dyno are ready"""
+    max_attempts = 10
+    attempt = 0
+    delay = 10  # seconds between checks
+
+    while attempt < max_attempts:
+        attempt += 1
+        print(
+            f"Checking if Heroku app and PostgreSQL are ready... (Attempt {attempt}/{max_attempts})"
+        )
+
+        # Check if web dyno is up
+        ps_output = c.run(f"heroku ps --app {HEROKU_APP_NAME}", hide=True).stdout
+        if "web.1: up" in ps_output:
+            print("Web dyno is up.")
+            break
+        else:
+            print("Web dyno is not up yet. Waiting...")
+
+        time.sleep(delay)
+
+    if attempt == max_attempts:
+        raise RuntimeError(
+            "Failed to detect that Heroku app and web dyno are ready after multiple attempts."
+        )
+
+
+@task
+def heroku_up(c):
+    """Scale up Heroku dyno, add PostgreSQL, run migrations, and load data"""
+    if not HEROKU_APP_NAME:
+        print("Error: HEROKU_APP_NAME is not set in the environment.")
+        return
+
+    print(f"Scaling up Heroku dyno and setting up the app for: {HEROKU_APP_NAME}...")
+
+    # Scale the web dyno up
+    c.run(f"heroku ps:scale web=1 --app {HEROKU_APP_NAME}")
+
+    # Check if PostgreSQL add-on already exists
+    addons_list_output = c.run(
+        f"heroku addons --app {HEROKU_APP_NAME}", hide=True
+    ).stdout
+
+    # Look for any PostgreSQL add-on in the output
+    if "heroku-postgresql" in addons_list_output:
+        print("PostgreSQL add-on already exists for this app. Skipping creation.")
+
+    else:
+        # Add PostgreSQL add-on (essential-0 plan)
+        print("No PostgreSQL add-on found. Creating a new PostgreSQL add-on...")
+        result = c.run(
+            f"heroku addons:create heroku-postgresql:essential-0 --app {HEROKU_APP_NAME}"
+        )
+
+        # Extract the PostgreSQL add-on name from the result
+        match = re.search(r"postgresql-\S+", result.stdout)
+        if match:
+            addon_name = match.group(0)
+            print(f"PostgreSQL add-on {addon_name} is being created...")
+
+            # Wait for PostgreSQL add-on to be fully created
+            wait_for_postgres_creation(c, addon_name)
+        else:
+            raise RuntimeError("Failed to detect the PostgreSQL add-on name.")
+
+    # Wait for the web dyno to be fully up
+    wait_for_heroku_ready(c)
+
+    # Run database migrations
+    c.run(f"heroku run python manage.py migrate --app {HEROKU_APP_NAME}")
+
+    # Load initial data from movies.json
+    c.run(f"heroku run python manage.py loaddata movies.json --app {HEROKU_APP_NAME}")
+
+    print(f"Heroku app {HEROKU_APP_NAME} is up and running.")
+
+
+@task
+def heroku_down(c):
+    """Scale down the Heroku dyno to stop the app"""
+    if not HEROKU_APP_NAME:
+        print("Error: HEROKU_APP_NAME is not set in the environment.")
+        return
+
+    print(f"Scaling down Heroku dyno for app: {HEROKU_APP_NAME}...")
+
+    # Scale the web dyno down (stop it)
+    c.run(f"heroku ps:scale web=0 --app {HEROKU_APP_NAME}")
+
+    print(f"Heroku app {HEROKU_APP_NAME} is scaled down.")
+
+
+@task
+def heroku_destroy(c):
+    """Scale up the Heroku dyno, then destroy PostgreSQL add-on"""
+    if not HEROKU_APP_NAME:
+        print("Error: HEROKU_APP_NAME is not set in the environment.")
+        return
+
+    print(
+        f"Scaling down the Heroku dyno to prepare for PostgreSQL destruction for: {HEROKU_APP_NAME}..."
+    )
+
+    # Scale the web dyno down
+    c.run(f"heroku ps:scale web=0 --app {HEROKU_APP_NAME}")
+
+    # Try to destroy the PostgreSQL add-on
+    print(
+        f"Attempting to destroy the Heroku PostgreSQL add-on for app: {HEROKU_APP_NAME}..."
+    )
+
+    try:
+        # Run the command, but capture both stdout and stderr
+        result = c.run(
+            f"heroku addons:destroy heroku-postgresql --app {HEROKU_APP_NAME} --confirm {HEROKU_APP_NAME}",
+            warn=True,
+            hide=True,
+        )
+
+        # Combine stdout and stderr to check for "not_found"
+        combined_output = result.stdout + result.stderr
+
+        if "Error ID: not_found" in combined_output:
+            print(
+                f"PostgreSQL add-on for {HEROKU_APP_NAME} has already been destroyed or does not exist."
+            )
+        else:
+            print(f"Heroku PostgreSQL add-on destroyed for app {HEROKU_APP_NAME}.")
+
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
+
+@task
+def export_requirements(c):
+    """Export requirements.txt from poetry.lock and place it inside the ./app directory"""
+
+    # Check if poetry is installed
+    try:
+        result = subprocess.run(
+            ["poetry", "--version"], check=True, stdout=subprocess.PIPE
+        )
+        print(result.stdout.decode("utf-8"))
+    except subprocess.CalledProcessError:
+        print("Poetry is not installed. Please install Poetry first.")
+        return
+
+    # Define paths using Path from pathlib
+    project_root = Path(__file__).parent
+    app_dir = project_root / "app"
+    requirements_file = app_dir / "requirements.txt"
+
+    # Create the app directory if it doesn't exist
+    app_dir.mkdir(exist_ok=True)
+
+    # Generate requirements.txt from poetry.lock
+    print("Exporting requirements.txt from poetry.lock...")
+    c.run(
+        f"poetry export -f requirements.txt --output {requirements_file} --without-hashes"
+    )
+
+    # Verify that the requirements.txt file was created
+    if requirements_file.exists():
+        print(f"requirements.txt successfully created at {requirements_file}")
+    else:
+        print("Failed to create requirements.txt.")
+
+
+@task
+def build_and_release_heroku(c):
+    """Build, Push and Release Heroku App."""
+
+    def _build_heroku(c):
+        """Build the Heroku Docker image"""
+        print("Building Heroku Docker image...")
+        c.run(
+            f"docker buildx build --platform linux/amd64 -f development/Dockerfile.prod -t registry.heroku.com/{HEROKU_APP_NAME}/web ."
+        )
+        print("Heroku Docker image built successfully.")
+
+    def _push_heroku(c):
+        print("Pushing Image to Registry...")
+        command = f"docker push registry.heroku.com/{HEROKU_APP_NAME}/web:latest"
+        c.run(command)
+        print("Image Pushed Successfully.")
+
+    def _release_heroku(c):
+        command = f"heroku container:release web --app {HEROKU_APP_NAME}"
+        c.run(command)
+
+    _build_heroku(c)
+    _push_heroku(c)
+    _release_heroku(c)
+
+
+@task
+def run_local_heroku(c):
+    """Run the Heroku Docker container with additional environment variables"""
+    if not HEROKU_APP_NAME:
+        print("Error: HEROKU_APP_NAME is not set in the environment.")
+        return
+
+    if not DATABASE_URL:
+        print("Error: DATABASE_URL is not set in the environment.")
+        return
+
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    if not SECRET_KEY:
+        print("Error: SECRET_KEY is not set in the environment.")
+        return
+
+    print(f"Running Heroku Docker container for app: {HEROKU_APP_NAME}...")
+
+    # Build the docker run command with the required options
+    command = (
+        f"docker run --platform linux/amd64 --name django-tdd "  # Added a space at the end
+        f"-e 'PORT=8765' "  # Added a space at the end
+        f"-e 'DATABASE_URL={DATABASE_URL}' "  # Added a space at the end
+        f"-e 'SECRET_KEY={SECRET_KEY}' "  # Added a space at the end
+        f"-p 8008:8765 "  # Added a space at the end
+        f"registry.heroku.com/{HEROKU_APP_NAME}/web:latest"  # This line remains unchanged
+    )
+
+    # Execute the command
+    c.run(command)
+
+    print(
+        f"Heroku Docker container '{HEROKU_APP_NAME}' is running on port 8008 (bound to container port 8765)."
+    )
+
+
+@task
+def stop_local_heroku(c):
+    """Stop the Heroku Docker container"""
+    print("Bringing Down Container django-tdd...")
+    command = "docker stop django-tdd"
+    c.run(command)
+    print("Container Successfully Stopped.")
+
+
+# ----------------------------------------------------------------------
+# LOCAL TASKS
+# ----------------------------------------------------------------------
 
 
 @task
@@ -76,21 +388,50 @@ def destroy(ctx):
     ctx.run("docker volume prune -f", pty=True)
 
 
-@task
-def pytest(ctx, keyword=None):
+# --------------------------------------------------
+# TESTS
+# --------------------------------------------------
+@task(
+    help={
+        "keyword": "Keyword expression to filter tests. If provided, it uses pytest's '-k' option. Defaults to None, which runs all tests.",
+        "warnings": "If True, warnings will be enabled. Defaults to False, which disables warnings.",
+        "coverage": "If True, coverage will be run using pytest-cov. Defaults to False, which just runs the tests.",
+        "coverage_report": "If True, creates coverage in html format.",
+    }
+)
+def run_tests(ctx, keyword=None, warnings=False, coverage=False, coverage_report=False):
     """
-    Run Pytests.
+    Run Pytests, with optional coverage reporting.
+
+    This task allows you to run Pytests inside a Docker container, with options to enable coverage
+    reporting and filter tests using keyword expressions. By default, it disables warnings unless
+    warnings=True is passed.
 
     Parameters:
         - ctx : The context object passed by invoke.
-        - keyword (str, optional) : Keyword expression to filter tests. If provided, it uses pytest's '-k' option. Defaults to None, which runs all tests.
+        - keyword (str, optional) : Keyword expression to filter tests. If provided, it uses pytest's '-k' option.
+                                    Defaults to None, which runs all tests.
+        - warnings (bool, optional) : If True, warnings will be enabled. Defaults to False, which disables warnings.
+        - coverage (bool, optional) : If True, coverage will be run using pytest-cov. Defaults to False, which just runs the tests.
     """
     # Construct the base pytest command
     command = f"docker exec -it {CONTAINER_NAME} pytest"
 
+    # Add coverage flag if coverage=True
+    if coverage:
+        command += " --cov=."
+
+    # Create HTML Coverage
+    if coverage_report:
+        command += " --cov=. --cov-report html"
+
     # Append the keyword expression if provided
     if keyword:
         command += f" -k '{keyword}'"
+
+    # Disable warnings if warnings=False
+    if not warnings:
+        command += " -p no:warnings"
 
     # Run the command
     ctx.run(command, pty=True)

@@ -18,8 +18,8 @@ RUN pip install --upgrade pip
 RUN pip install poetry
 
 # Copy Poetry files to a persistent location
-COPY ../pyproject.toml ./
-COPY ../poetry.lock ./
+COPY ./pyproject.toml ./
+COPY ./poetry.lock ./
 
 # Copy entrypoint.sh to a persistent location
 COPY ../development/entrypoint.sh ./

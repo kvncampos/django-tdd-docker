@@ -94,6 +94,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://runner:runner@localhost:5432/users
       DJANGO_ALLOWED_HOSTS: 'localhost 127.0.0.1 [::1]'
+      SECRET_KEY: ${{ secrets.SECRE_KEY }}
 
     steps:
       - name: Checkout repository

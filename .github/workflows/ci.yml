@@ -103,7 +103,10 @@ jobs:
         run: |
           docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web:latest
 
-      # Release the Docker image on Heroku
-      - name: Release the Docker image on Heroku
+      - name: Heroku Container Login and Release App
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
         run: |
+          heroku container:login
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}

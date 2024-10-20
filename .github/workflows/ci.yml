@@ -74,9 +74,9 @@ jobs:
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
 
-      - name: Testing Info
+      - name: Testing Task
         run: |
-          ls -l development
+          invoke build-and-release
 
       # # Heroku login for both Docker and CLI
       # - name: Heroku Container Login

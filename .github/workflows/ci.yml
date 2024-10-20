@@ -148,6 +148,9 @@ jobs:
         run: |
           echo $HEROKU_API_KEY | heroku auth:token
 
+      - name: Login to Container
+        run: heroku container:login
+
       - name: Release the Docker image on Heroku
         run: |
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}

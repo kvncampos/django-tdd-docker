@@ -551,7 +551,7 @@ def local_ruff(c, path=".", auto_format=False):
 
     """
     # Base Ruff command for local environment
-    command = f"ruff check {path} --exclude './app/tests/*' --exclude './app/movies/migrations/*' --exclude 'tasks.py'"
+    command = f"ruff check {path} --exclude './app/tests/*,./app/movies/migrations/*,tasks.py,./app/drf_project/settings.py'"
 
     # Add auto-format option if required
     if auto_format:

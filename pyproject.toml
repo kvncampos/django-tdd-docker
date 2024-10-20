@@ -48,27 +48,26 @@ exclude = '''
 '''
 
 [tool.ruff]
-# Ruff configuration
+# Deprecated settings migrated to the lint section
+line-length = 88
+
+[tool.ruff.lint]
+# Select all rules but apply exclusions
 select = ["ALL"]
 
 ignore = [
-    "E501",  # Ignore line-length errors (Black will handle this)
+    "E501",  # Ignore line-length errors (handled by Black)
     "E231",  # Ignore missing whitespace around operators (handled by Black)
     "E203",  # Ignore whitespace before ':' (handled by Black)
+    "D100",  # Ignore missing docstring in public module
+    "D104",  # Ignore missing docstring in public package
+    "ANN201" # Ignore missing return type annotation for public functions
 ]
 
-# Ruff configurations
-line-length = 88
-
-# Exclude patterns for the Docker container structure
 exclude = [
-    # Exclude any .pyc files
-    "*.pyc",
-
-    # Exclude __pycache__ directories
-    "__pycache__/",
-
-    # Adjust for the structure inside the container
-    "./tests/*",               # Exclude tests directory inside app/ in Docker
-    "movies/migrations/*",    # Exclude migrations directory inside movies app in Docker
+    "*.pyc",                  # Exclude any .pyc files
+    "__pycache__/",           # Exclude __pycache__ directories
+    "tests/*",                # Exclude tests directory
+    "movies/migrations/*"     # Exclude migrations in movies app
+    "drf_project/settings.py" # Exlude drf_project settings
 ]

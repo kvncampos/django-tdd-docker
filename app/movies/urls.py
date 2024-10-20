@@ -20,7 +20,7 @@ def ping(request):  # noqa: ANN001, ARG001
         JSON: Ping Pong.
 
     """
-    return JsonResponse({"message": "pong"})
+    return JsonResponse({"message": "pong!"})
 
 
 # Include the router's URLs

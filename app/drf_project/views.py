@@ -11,5 +11,5 @@ def ping(request):  # noqa: ANN001, ARG001
         JSON: Ping Pong.
 
     """
-    data = {"ping": "pong"}
+    data = {"ping": "pong!"}
     return JsonResponse(data)

@@ -76,9 +76,7 @@ jobs:
 
       - name: Testing Info
         run: |
-          ls -l
-          heroku whoami
-          heroku ps
+          ls -l development
 
       # # Heroku login for both Docker and CLI
       # - name: Heroku Container Login

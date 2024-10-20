@@ -1,5 +1,5 @@
 import pytest
-from app.movies.models import Movie
+from movies.models import Movie
 
 
 @pytest.fixture(scope="function")

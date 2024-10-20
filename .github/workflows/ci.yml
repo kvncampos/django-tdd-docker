@@ -75,20 +75,14 @@ jobs:
           curl https://cli-assets.heroku.com/install.sh | sh
 
       # Heroku login for both Docker and CLI
-      - name: Heroku Login and Docker Login to Heroku
+      - name: Heroku Container Login
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
           HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
         run: |
           echo $HEROKU_API_KEY | docker login --username=$HEROKU_EMAIL --password-stdin registry.heroku.com
-          heroku auth:token
           heroku container:login
-          docker buildx build \
-            --platform linux/amd64 \
-            --file development/Dockerfile.prod \
-            --tag registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web:latest \
-            --push \
-            .
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}
 
       - name: Heroku Container Login and Release App
         env:

@@ -28,11 +28,11 @@ jobs:
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          echo $HEROKU_API_KEY | heroku auth:token
+          echo $HEROKU_API_KEY
 
       - name: Docker Login to Heroku
         run: |
-          heroku container:login
+          docker login --username=_ --password=$(HEROKU_API_KEY) registry.heroku.com
 
       - name: Pull the latest Docker image from Heroku (if exists)
         run: |

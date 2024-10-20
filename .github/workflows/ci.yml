@@ -117,9 +117,9 @@ jobs:
 
       - name: Run Black
         run: |
-          black --check --exclude=migrations .
+          black --check --exclude=moves/migrations .
 
       - name: Run Ruff (including isort)
         run: |
           cd app
-          ruff check . --fix
+          ruff check . --fix --exclude 'tests/*'

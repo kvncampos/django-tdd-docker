@@ -43,7 +43,7 @@ exclude = '''
   | build
   | dist
   | migrations
-  | app/movies/migrations  # Exclude migrations directory in movies app
+  | movies/migrations  # Exclude migrations directory in movies app
 )/
 '''
 

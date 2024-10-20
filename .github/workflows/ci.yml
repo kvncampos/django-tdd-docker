@@ -117,10 +117,10 @@ jobs:
       - name: Run Black
         run: |
           cd app
-          black --check . --exclude 'movies/migrations'
+          black --check .
 
       - name: Run Ruff (including isort)
         run: |
           cd app
-          ruff check . --fix --exclude 'tests/*,movies/migrations/*,tasks.py,drf_project/settings.py'
+          ruff check . --fix
 

@@ -76,7 +76,7 @@ jobs:
 
       - name: Testing Task
         run: |
-          invoke build-and-release
+          invoke build-and-release-heroku
 
       # # Heroku login for both Docker and CLI
       # - name: Heroku Container Login

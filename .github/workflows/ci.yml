@@ -24,6 +24,9 @@ jobs:
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
 
+      - name: Login to Heroku
+        run: heroku login
+
       - name: Set Heroku Auth Token
         run: |
           heroku auth:token

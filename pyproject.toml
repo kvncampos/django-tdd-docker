@@ -68,6 +68,6 @@ exclude = [
     "*.pyc",                  # Exclude any .pyc files
     "__pycache__/",           # Exclude __pycache__ directories
     "tests/*",                # Exclude tests directory
-    "movies/migrations/*"     # Exclude migrations in movies app
-    "drf_project/settings.py" # Exlude drf_project settings
+    "movies/migrations/*",    # Exclude migrations in movies app
+    "drf_project/settings.py" # Exclude drf_project settings
 ]

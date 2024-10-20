@@ -74,19 +74,25 @@ jobs:
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
 
-      # Heroku login for both Docker and CLI
-      - name: Heroku Container Login
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
+      - name: Testing Info
         run: |
-          echo $HEROKU_API_KEY | docker login --username=$HEROKU_EMAIL --password-stdin registry.heroku.com
-          heroku container:push --recursive --context-path=development/Dockerfile.prod --app ${{ secrets.HEROKU_APP_NAME }}
+          ls -l
+          heroku whoami
+          heroku ps
 
-      - name: Heroku Container Login and Release App
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
-        run: |
-          heroku container:login
-          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}
+      # # Heroku login for both Docker and CLI
+      # - name: Heroku Container Login
+      #   env:
+      #     HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      #     HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
+      #   run: |
+      #     echo $HEROKU_API_KEY | docker login --username=$HEROKU_EMAIL --password-stdin registry.heroku.com
+      #     heroku container:push --recursive --context-path=development/Dockerfile.prod --app ${{ secrets.HEROKU_APP_NAME }}
+
+      # - name: Heroku Container Login and Release App
+      #   env:
+      #     HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      #     HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
+      #   run: |
+      #     heroku container:login
+      #     heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}

@@ -94,7 +94,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://runner:runner@localhost:5432/users
       DJANGO_ALLOWED_HOSTS: 'localhost 127.0.0.1 [::1]'
-      SECRET_KEY: ${{ secrets.SECRE_KEY }}
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
 
     steps:
       - name: Checkout repository
@@ -121,7 +121,7 @@ jobs:
       - name: Run Black
         run: |
           cd app
-          black --check --exclude=moves/migrations .
+          black --check --exclude=movies/migrations .
 
       - name: Run Ruff (including isort)
         run: |

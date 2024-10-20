@@ -42,6 +42,7 @@ nosetests.xml
 coverage.xml
 *.cover
 *.py,cover
+notes/
 
 # Distribution / packaging
 .Python

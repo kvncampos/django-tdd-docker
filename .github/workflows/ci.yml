@@ -152,16 +152,10 @@ jobs:
         run: |
           echo $HEROKU_API_KEY | docker login --username=$HEROKU_EMAIL --password-stdin registry.heroku.com
           heroku container:login
-          heroku whoami
 
-      - name: Heroku CLI Login
+      - name: Heroku Container Login and Release App
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: heroku container:login
-
-      - name: what user am i
-        run: heroku whoami
-
-      - name: Release the Docker image on Heroku
         run: |
+          heroku container:login
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}

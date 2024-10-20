@@ -24,18 +24,19 @@ jobs:
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
 
-      - name: Login to Heroku
-        run: heroku login
-
-      - name: Set Heroku Auth Token
-        run: |
-          heroku auth:token
+      - name: Heroku Login
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-
-      - name: Docker Login to Heroku
+          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
         run: |
-          docker login --username=_ --password=$(heroku auth:token) registry.heroku.com
+          echo $HEROKU_API_KEY | heroku auth:token
+
+      - name: Docker Login to Heroku Container Registry
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
+        run: |
+          docker login --username=$HEROKU_EMAIL --password=$HEROKU_API_KEY registry.heroku.com
 
       - name: Pull the latest Docker image from Heroku (if exists)
         run: |

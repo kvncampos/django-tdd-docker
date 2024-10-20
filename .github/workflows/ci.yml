@@ -9,8 +9,9 @@ on:
       - main
 
 jobs:
+  # Build Stage
   build:
-    name: Build and Push Docker Image to Heroku
+    name: Build Docker Image
     runs-on: ubuntu-latest
 
     steps:
@@ -77,14 +78,11 @@ jobs:
         run: |
           docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web
 
-      - name: Release the Docker image on Heroku
-        run: |
-          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}
-
-
+  # Test Stage
   test:
     name: Test and Lint
     runs-on: ubuntu-latest
+    needs: build  # Wait for build stage to complete
     services:
       postgres:
         image: postgres:latest
@@ -133,3 +131,23 @@ jobs:
           cd app
           ruff check . --fix --exclude 'tests/*,movies/migrations/*,tasks.py,drf_project/settings.py'
 
+  # Release Stage
+  release:
+    name: Release Docker Image on Heroku
+    runs-on: ubuntu-latest
+    needs: test  # Wait for test stage to complete
+
+    steps:
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Heroku Login with API Key
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          echo $HEROKU_API_KEY | heroku auth:token
+
+      - name: Release the Docker image on Heroku
+        run: |
+          heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}

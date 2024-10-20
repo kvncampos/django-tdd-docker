@@ -93,6 +93,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://runner:runner@localhost:5432/users
+      DJANGO_ALLOWED_HOSTS: 'localhost 127.0.0.1 [::1]'
 
     steps:
       - name: Checkout repository

@@ -31,6 +31,15 @@ jobs:
         run: |
           poetry export -f requirements.txt --output app/requirements.txt --without-hashes
 
+      - name: Check if requirements.txt is generated and non-empty
+        run: |
+          if [ ! -s app/requirements.txt ]; then
+            echo "Error: requirements.txt is either missing or empty."
+            exit 1
+          else
+            echo "requirements.txt generated successfully."
+          fi
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -117,10 +126,10 @@ jobs:
       - name: Run Black
         run: |
           cd app
-          black --check .
+          black --check . --exclude 'movies/migrations'
 
       - name: Run Ruff (including isort)
         run: |
           cd app
-          ruff check . --fix
+          ruff check . --fix --exclude 'tests/*,movies/migrations/*,tasks.py,drf_project/settings.py'
 

@@ -282,6 +282,7 @@ def build_and_release_heroku(c):
         command = f"heroku container:release web --app {HEROKU_APP_NAME}"
         c.run(command)
 
+    export_requirements(c)
     _build_heroku(c)
     _push_heroku(c)
     _release_heroku(c)
@@ -382,6 +383,7 @@ def logs(ctx, follow=False):
 @task
 def build(ctx, no_cache=False):
     """Build Docker images."""
+    export_requirements(ctx)
     command = f"docker-compose -f {COMPOSE_FILE} build"
     if no_cache:
         command += " --no-cache"

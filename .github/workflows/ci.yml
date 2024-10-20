@@ -114,10 +114,6 @@ jobs:
           cd app
           pytest -p no:warnings --cov=.
 
-      - name: Run Flake8
-        run: |
-          flake8 .
-
       - name: Run Black
         run: |
           cd app

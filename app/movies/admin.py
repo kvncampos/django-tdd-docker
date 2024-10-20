@@ -6,11 +6,13 @@ from .models import CustomUser, Movie
 
 @admin.register(CustomUser)
 class UserAdmin(DefaultUserAdmin):
-    pass
+    """Register the CustomUser model with the UserAdmin interface for administration purposes."""
 
 
 @admin.register(Movie)
 class MovieAdmin(admin.ModelAdmin):
+    """Register the Movie model with the MovieAdmin class to customize its display in the Django admin panel."""
+
     fields = (
         "title",
         "genre",

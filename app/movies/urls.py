@@ -10,7 +10,16 @@ router = DefaultRouter()
 router.register(r"api/movies", MovieViewSet, basename="movie")
 
 
-def ping(request):
+def ping(request):  # noqa: ANN001, ARG001
+    """Return a Ping Test View.
+
+    Args:
+        request (HttpRequest): The HTTP request object.
+
+    Returns:
+        JSON: Ping Pong.
+
+    """
     return JsonResponse({"message": "pong"})
 
 

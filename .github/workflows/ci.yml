@@ -92,6 +92,9 @@ jobs:
             --tag registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web:latest \
             .
 
+      - name: List Docker images
+        run: docker images
+
       # Push Docker image to Heroku
       - name: Push Docker image to Heroku
         run: |

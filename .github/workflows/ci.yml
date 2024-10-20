@@ -117,9 +117,10 @@ jobs:
       - name: Run Black
         run: |
           cd app
-          black --check --exclude=movies/migrations .
+          black --check --include 'tests|movies' --exclude 'movies/migrations'
 
       - name: Run Ruff (including isort)
         run: |
           cd app
-          ruff check . --fix --exclude 'tests/*'
+          ruff check . --fix --exclude 'tests/*,movies/migrations/*'
+

@@ -42,7 +42,7 @@ jobs:
             --file development/Dockerfile.prod \
             --tag registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web:latest \
             .
-          docker images | grep registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web:latest || exit 1
+          docker images
           docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web:latest
 
   # Test Stage

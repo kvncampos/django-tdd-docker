@@ -33,7 +33,7 @@ jobs:
           HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
         run: |
           echo $HEROKU_API_KEY | docker login --username=_ --password-stdin registry.heroku.com
-          heroku container:push prod
+          heroku container:push prod --app ${{ secrets.HEROKU_APP_NAME }}
 
   # Test Stage
   test:

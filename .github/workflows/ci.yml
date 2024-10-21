@@ -24,9 +24,9 @@ jobs:
       - name: Docker Login
         env:
           DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
         run: |
-          echo $DOCKER_PASSWORD | docker login --username $DOCKER_HUB_USERNAME --password-stdin
+          echo $DOCKER_HUB_ACCESS_TOKEN | docker login --username $DOCKER_HUB_USERNAME --password-stdin
 
       - name: Build and Push Docker image
         run: |
@@ -100,9 +100,9 @@ jobs:
       - name: Docker Login
         env:
           DOCKER_HUB_USERNAME: ${{ secrets.DOCKER_HUB_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+          DOCKER_HUB_ACCESS_TOKEN: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
         run: |
-          echo $DOCKER_PASSWORD | docker login --username $DOCKER_HUB_USERNAME --password-stdin
+          echo $DOCKER_HUB_ACCESS_TOKEN | docker login --username $DOCKER_HUB_USERNAME --password-stdin
 
       - name: Pull Docker image
         run: |

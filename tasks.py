@@ -42,68 +42,67 @@ load_dotenv()
 HEROKU_APP_NAME = os.getenv("HEROKU_APP_NAME")
 
 
-def wait_for_postgres_creation(c, addon_name):
-    """Wait for PostgreSQL add-on to be fully created"""
-    max_attempts = 10
-    attempt = 0
-    delay = 30  # seconds between checks
-
-    while attempt < max_attempts:
-        attempt += 1
-        print(
-            f"Checking PostgreSQL {addon_name} creation status... (Attempt {attempt}/{max_attempts})",
-        )
-
-        # Check the add-on status using heroku addons:info
-        pg_info_output = c.run(
-            f"heroku addons:info {addon_name} --app {HEROKU_APP_NAME}",
-            hide=True,
-        ).stdout.strip()
-
-        # Look for the state in the output after stripping whitespace
-        if "created" in pg_info_output:
-            print("PostgreSQL has been created and is ready.")
-            break
-        print("PostgreSQL is still being created. Waiting...")
-
-        time.sleep(delay)
-
-    if attempt == max_attempts:
-        raise RuntimeError(
-            f"PostgreSQL add-on {addon_name} was not created after {max_attempts} attempts.",
-        )
-
-
-def wait_for_heroku_ready(c):
-    """Wait until the Heroku app and web dyno are ready"""
-    max_attempts = 10
-    attempt = 0
-    delay = 10  # seconds between checks
-
-    while attempt < max_attempts:
-        attempt += 1
-        print(
-            f"Checking if Heroku app and PostgreSQL are ready... (Attempt {attempt}/{max_attempts})",
-        )
-
-        # Check if web dyno is up
-        ps_output = c.run(f"heroku ps --app {HEROKU_APP_NAME}", hide=True).stdout
-        if "web.1: up" in ps_output:
-            print("Web dyno is up.")
-            break
-        print("Web dyno is not up yet. Waiting...")
-
-        time.sleep(delay)
-
-    if attempt == max_attempts:
-        raise RuntimeError(
-            "Failed to detect that Heroku app and web dyno are ready after multiple attempts.",
-        )
-
-
 @task
 def heroku_up(c):
     """Scale up Heroku dyno, add PostgreSQL, run migrations, and load data"""
+
+    def _wait_for_heroku_ready(c):
+        """Wait until the Heroku app and web dyno are ready"""
+        max_attempts = 10
+        attempt = 0
+        delay = 10  # seconds between checks
+
+        while attempt < max_attempts:
+            attempt += 1
+            print(
+                f"Checking if Heroku app and PostgreSQL are ready... (Attempt {attempt}/{max_attempts})",
+            )
+
+            # Check if web dyno is up
+            ps_output = c.run(f"heroku ps --app {HEROKU_APP_NAME}", hide=True).stdout
+            if "web.1: up" in ps_output:
+                print("Web dyno is up.")
+                break
+            print("Web dyno is not up yet. Waiting...")
+
+            time.sleep(delay)
+
+        if attempt == max_attempts:
+            raise RuntimeError(
+                "Failed to detect that Heroku app and web dyno are ready after multiple attempts.",
+            )
+
+    def _wait_for_postgres_creation(c, addon_name):
+        """Wait for PostgreSQL add-on to be fully created"""
+        max_attempts = 10
+        attempt = 0
+        delay = 30  # seconds between checks
+
+        while attempt < max_attempts:
+            attempt += 1
+            print(
+                f"Checking PostgreSQL {addon_name} creation status... (Attempt {attempt}/{max_attempts})",
+            )
+
+            # Check the add-on status using heroku addons:info
+            pg_info_output = c.run(
+                f"heroku addons:info {addon_name} --app {HEROKU_APP_NAME}",
+                hide=True,
+            ).stdout.strip()
+
+            # Look for the state in the output after stripping whitespace
+            if "created" in pg_info_output:
+                print("PostgreSQL has been created and is ready.")
+                break
+            print("PostgreSQL is still being created. Waiting...")
+
+            time.sleep(delay)
+
+        if attempt == max_attempts:
+            raise RuntimeError(
+                f"PostgreSQL add-on {addon_name} was not created after {max_attempts} attempts.",
+            )
+
     if not HEROKU_APP_NAME:
         print("Error: HEROKU_APP_NAME is not set in the environment.")
         return
@@ -137,12 +136,12 @@ def heroku_up(c):
             print(f"PostgreSQL add-on {addon_name} is being created...")
 
             # Wait for PostgreSQL add-on to be fully created
-            wait_for_postgres_creation(c, addon_name)
+            _wait_for_postgres_creation(c, addon_name)
         else:
             raise RuntimeError("Failed to detect the PostgreSQL add-on name.")
 
     # Wait for the web dyno to be fully up
-    wait_for_heroku_ready(c)
+    _wait_for_heroku_ready(c)
 
     # Run database migrations
     c.run(f"heroku run python manage.py migrate --app {HEROKU_APP_NAME}")

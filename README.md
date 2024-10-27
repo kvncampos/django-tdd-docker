@@ -1,98 +1,74 @@
 <div align="center" id="top">
-  <img src="./.github/app.gif" alt="Django Tdd Docker" />
-
-  &#xa0;
-
-  <!-- <a href="https://djangotdddocker.netlify.app">Demo</a> -->
+  <img src="./.github/app.gif" alt="Django TDD Project" />
 </div>
 
-<h1 align="center">Django Tdd Docker</h1>
+<h1 align="center">Django TDD Project</h1>
 
 <p align="center">
-  <img alt="Github top language" src="https://img.shields.io/github/languages/top/{{YOUR_GITHUB_USERNAME}}/django-tdd-docker?color=56BEB8">
-
-  <img alt="Github language count" src="https://img.shields.io/github/languages/count/{{YOUR_GITHUB_USERNAME}}/django-tdd-docker?color=56BEB8">
-
-  <img alt="Repository size" src="https://img.shields.io/github/repo-size/{{YOUR_GITHUB_USERNAME}}/django-tdd-docker?color=56BEB8">
-
-  <img alt="License" src="https://img.shields.io/github/license/{{YOUR_GITHUB_USERNAME}}/django-tdd-docker?color=56BEB8">
-
-  <!-- <img alt="Github issues" src="https://img.shields.io/github/issues/{{YOUR_GITHUB_USERNAME}}/django-tdd-docker?color=56BEB8" /> -->
-
-  <!-- <img alt="Github forks" src="https://img.shields.io/github/forks/{{YOUR_GITHUB_USERNAME}}/django-tdd-docker?color=56BEB8" /> -->
-
-  <!-- <img alt="Github stars" src="https://img.shields.io/github/stars/{{YOUR_GITHUB_USERNAME}}/django-tdd-docker?color=56BEB8" /> -->
+  <img alt="Github top language" src="https://img.shields.io/github/languages/top/kvncampos/django-tdd-docker?color=56BEB8">
+  <img alt="Github language count" src="https://img.shields.io/github/languages/count/kvncampos/django-tdd-docker?color=56BEB8">
+  <img alt="Repository size" src="https://img.shields.io/github/repo-size/kvncampos/django-tdd-docker?color=56BEB8">
+  <img alt="License" src="https://img.shields.io/github/license/kvncampos/django-tdd-docker?color=56BEB8">
 </p>
 
-<!-- Status -->
+## Table of Contents
 
-<!-- <h4 align="center">
-	🚧  Django Tdd Docker 🚀 Under construction...  🚧
-</h4>
-
-<hr> -->
-
-<p align="center">
-  <a href="#dart-about">About</a> &#xa0; | &#xa0;
-  <a href="#sparkles-features">Features</a> &#xa0; | &#xa0;
-  <a href="#rocket-technologies">Technologies</a> &#xa0; | &#xa0;
-  <a href="#white_check_mark-requirements">Requirements</a> &#xa0; | &#xa0;
-  <a href="#checkered_flag-starting">Starting</a> &#xa0; | &#xa0;
-  <a href="#memo-license">License</a> &#xa0; | &#xa0;
-  <a href="https://github.com/{{YOUR_GITHUB_USERNAME}}" target="_blank">Author</a>
-</p>
-
-<br>
+- [About](#dart-about)
+- [Technologies](#rocket-technologies)
+- [Requirements](#white_check_mark-requirements)
+- [Starting](#checkered_flag-starting)
+- [License](#memo-license)
+- [Author](#heart-author)
 
 ## :dart: About ##
 
-Describe your project
-
-## :sparkles: Features ##
-
-:heavy_check_mark: Feature 1;\
-:heavy_check_mark: Feature 2;\
-:heavy_check_mark: Feature 3;
+This project demonstrates Test-Driven Development (TDD) using Django and Django REST Framework, with containerization through Docker. It is designed to run in local development and can be deployed to Heroku for production.
 
 ## :rocket: Technologies ##
 
 The following tools were used in this project:
 
-- [Expo](https://expo.io/)
-- [Node.js](https://nodejs.org/en/)
-- [React](https://pt-br.reactjs.org/)
-- [React Native](https://reactnative.dev/)
-- [TypeScript](https://www.typescriptlang.org/)
+- [Python](https://www.python.org/)
+- [Django](https://www.djangoproject.com/)
+- [Docker](https://www.docker.com/)
+- [Heroku](https://www.heroku.com/)
 
 ## :white_check_mark: Requirements ##
 
-Before starting :checkered_flag:, you need to have [Git](https://git-scm.com) and [Node](https://nodejs.org/en/) installed.
+Before starting, make sure you have the following installed:
+
+- [Git](https://git-scm.com)
+- [Python 3.12](https://www.python.org/)
+- [Poetry](https://python-poetry.org/)
+- [Docker](https://www.docker.com/)
 
 ## :checkered_flag: Starting ##
 
 ```bash
 # Clone this project
-$ git clone https://github.com/{{YOUR_GITHUB_USERNAME}}/django-tdd-docker
+$ git clone https://github.com/kvncampos/django-tdd-docker
 
 # Access
 $ cd django-tdd-docker
 
 # Install dependencies
-$ yarn
+$ poetry shell
+$ poetry install
 
-# Run the project
-$ yarn start
+# Local Development, Run Project
+$ invoke run
 
-# The server will initialize in the <http://localhost:3000>
-```
+# The server will initialize at <http://localhost:8009/>
 
-## :memo: License ##
+# HTTP STATUS
+$ http://localhost:8009/ping/
 
-This project is under license from MIT. For more details, see the [LICENSE](LICENSE.md) file.
+> Response:
+    {
+      "ping": "pong!"
+    }
 
+# Using Docker
+$ docker-compose -f development/docker-compose.yml up --build
 
-Made with :heart: by <a href="https://github.com/{{YOUR_GITHUB_USERNAME}}" target="_blank">{{YOUR_NAME}}</a>
-
-&#xa0;
-
-<a href="#top">Back to top</a>
+# The server will initialize at <http://localhost:8000/>

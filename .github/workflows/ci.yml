@@ -57,8 +57,8 @@ jobs:
           --health-retries=5
 
     env:
-      DATABASE_URL: postgresql://runner:runner@localhost:5432/users
-      DJANGO_ALLOWED_HOSTS: 'localhost 127.0.0.1 [::1]'
+      DATABASE_URL: ${{ vars.DATABASE_URL}}
+      DJANGO_ALLOWED_HOSTS: ${{ vars.DJANGO_ALLOWED_HOSTS }}
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
 
     steps:

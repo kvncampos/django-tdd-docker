@@ -246,7 +246,7 @@ def export_requirements(c):
     project_root = Path(__file__).parent
     app_dir = project_root / "app"
     requirements_file = app_dir / "requirements.txt"
-
+    requirements_dev_file = app_dir / "requirements-dev.txt"
     # Create the app directory if it doesn't exist
     app_dir.mkdir(exist_ok=True)
 
@@ -259,6 +259,16 @@ def export_requirements(c):
     # Verify that the requirements.txt file was created
     if requirements_file.exists():
         print(f"requirements.txt successfully created at {requirements_file}")
+    else:
+        print("Failed to create requirements.txt.")
+
+    print("Exporting requirements-dev.txt from poetry.lock...")
+    c.run(
+        f"poetry export -f requirements.txt --with dev --output {requirements_dev_file} --without-hashes",
+    )
+    # Verify that the requirements-dev.txt file was created
+    if requirements_dev_file.exists():
+        print(f"requirements-dev.txt successfully created at {requirements_file}")
     else:
         print("Failed to create requirements.txt.")
 

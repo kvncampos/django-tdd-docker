@@ -147,6 +147,9 @@ jobs:
           password: ${{ secrets.DOCKER_API_KEY }}
 
       - name: Build and Push Prod Docker Image
+        run: docker ps
+
+      - name: Build and Push Prod Docker Image
         run: |
           docker buildx build \
             --platform linux/amd64 \

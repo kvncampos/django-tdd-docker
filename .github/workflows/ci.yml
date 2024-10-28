@@ -82,9 +82,10 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+
     env:
-      DATABASE_URL: ${{ vars.DATABASE_URL }}
-      DJANGO_ALLOWED_HOSTS: ${{ vars.DJANGO_ALLOWED_HOSTS }}
+      DATABASE_URL: postgresql://runner:runner@localhost:5432/users
+      DJANGO_ALLOWED_HOSTS: "localhost 127.0.0.1 [::1]"
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
 
     steps:
@@ -98,39 +99,22 @@ jobs:
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev
 
-      - name: List Available Docker Images
+      - name: Run Tests and Linting Inside Docker Container
         run: |
-          echo "Listing all Docker images:"
-          docker images
-
-      - name: Run Django Container for Tests
-        run: |
-          docker run -d \
-            --name test_django_app \
+          docker run --rm \
             --network=host \
-            -e DATABASE_URL=${{ vars.DATABASE_URL }} \
-            -e DJANGO_ALLOWED_HOSTS=${{ vars.DJANGO_ALLOWED_HOSTS }} \
+            -e DATABASE_URL=postgresql://runner:runner@localhost:5432/users \
+            -e DJANGO_ALLOWED_HOSTS="localhost 127.0.0.1 [::1]" \
             -e SECRET_KEY=${{ secrets.SECRET_KEY }} \
-            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev
-
-      - name: Run Database Migrations
-        run: |
-          docker exec test_django_app python manage.py migrate
-
-      - name: Run Tests
-        run: |
-          docker exec test_django_app pytest -p no:warnings --cov=.
-
-      - name: Run Linting
-        run: |
-          docker exec test_django_app bash -c "black --check . --exclude='migrations|env' && \
-          ruff check . --exclude 'tests/*,movies/migrations/*,tasks.py,drf_project/settings.py'"
-
-      - name: Stop and Remove Django Container
-        run: |
-          docker stop test_django_app
-          docker rm test_django_app
-
+            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev \
+            bash -c "
+              export DEBUG=1 &&
+              pytest -p no:warnings --cov=. &&
+              black . --check --exclude='migrations|env' &&
+              ruff check . --exclude 'tests/*,movies/migrations/*,tasks.py,drf_project/settings.py' &&
+              export DEBUG=0 &&
+              python manage.py check --deploy --fail-level=WARNING
+            "
 
   # Build Production Docker Image
   build-prod-image:

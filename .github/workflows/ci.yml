@@ -47,6 +47,11 @@ jobs:
         run: |
           pip install -r app/requirements-dev.txt
 
+      - name: Run Migrations
+        run: |
+          cd app
+          python manage.py migrate
+
       - name: Run tests with Pytest
         run: |
           cd app

@@ -83,7 +83,7 @@ jobs:
           --health-timeout=5s
           --health-retries=5
     env:
-      DATABASE_URL: ${{ vars.DATABASE_URL}}
+      DATABASE_URL: ${{ vars.DATABASE_URL }}
       DJANGO_ALLOWED_HOSTS: ${{ vars.DJANGO_ALLOWED_HOSTS }}
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
 
@@ -98,24 +98,33 @@ jobs:
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev
 
-      - name: Run Tests Inside Docker Container
+      - name: Run Django Container for Tests
         run: |
-          docker run --rm \
+          docker run -d \
+            --name test_django_app \
+            --network=host \
             -e DATABASE_URL=${{ vars.DATABASE_URL }} \
             -e DJANGO_ALLOWED_HOSTS=${{ vars.DJANGO_ALLOWED_HOSTS }} \
             -e SECRET_KEY=${{ secrets.SECRET_KEY }} \
-            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev \
-            pytest -p no:warnings --cov=.
+            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev
 
-      - name: Run Linting Inside Docker Container
+      - name: Run Database Migrations
         run: |
-          docker run --rm \
-            -v ${{ github.workspace }}/app:/usr/src/app \
-            -w /usr/src/app \
-            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev \
-            bash -c "black --check . --exclude 'migrations|env' && \
-                      ruff check . --fix --exclude 'tests/*,movies/migrations/*,tasks.py,drf_project/settings.py'"
+          docker exec test_django_app python manage.py migrate
 
+      - name: Run Tests
+        run: |
+          docker exec test_django_app pytest -p no:warnings --cov=.
+
+      - name: Run Linting
+        run: |
+          docker exec test_django_app bash -c "black --check . --exclude='migrations|env' && \
+          ruff check . --exclude 'tests/*,movies/migrations/*,tasks.py,drf_project/settings.py'"
+
+      - name: Stop and Remove Django Container
+        run: |
+          docker stop test_django_app
+          docker rm test_django_app
 
 
   # Build Production Docker Image

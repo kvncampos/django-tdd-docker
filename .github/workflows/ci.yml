@@ -69,7 +69,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r app/requirements.txt
+          pip install -r app/requirements-dev.txt
 
       - name: Run tests with Pytest
         run: |

@@ -161,6 +161,17 @@ jobs:
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:latest
 
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Docker Login to Heroku Container Registry
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
+        run: |
+          echo $HEROKU_API_KEY | docker login --username=_ --password-stdin registry.heroku.com
+
       - name: Deploy to Heroku
         run: |
           heroku container:push web --app ${{ secrets.HEROKU_APP_NAME }}

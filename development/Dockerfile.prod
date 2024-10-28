@@ -7,33 +7,62 @@ WORKDIR /usr/src/app
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV DEBUG=0
-ENV DJANGO_ALLOWED_HOSTS=.herokuapp.com
+ENV LOCAL_RUFF_EXCLUDE = "tests/*,movies/migrations/*,drf_project/settings.py"
 
 # install system dependencies
 RUN apt-get update \
   && apt-get -y install gcc postgresql \
   && apt-get clean
 
-
-# Copy the requirements.txt file created outside Docker
-COPY ./app/requirements.txt .
-
-# Install dependencies using pip
-RUN pip install --no-cache-dir -r ./requirements.txt
+# install dependencies
+RUN pip install --upgrade pip
+COPY ./requirements.txt .
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /usr/src/app/wheels -r requirements.txt
 
 # Copy the rest of the application code
+COPY ./app .
+RUN pip install black==24.4.2 flake8==7.1.0 isort==5.13.2
+RUN flake8 .
+RUN black . --check --exclude=migrations
+RUN isort . --check-only
+
+#########
+# FINAL #
+#########
+
+# pull official base image
+FROM python:3.12.4-slim-bookworm
+
+# set work directory
+WORKDIR /usr/src/app
+
+# set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+ENV DEBUG 0
+ENV SECRET_KEY foo
+ENV DJANGO_ALLOWED_HOSTS .herokuapp.com
+
+# install system dependencies
+RUN apt-get update \
+  && apt-get -y install gcc postgresql \
+  && apt-get clean
+
+# install dependencies
+COPY --from=builder /usr/src/app/wheels /wheels
+COPY --from=builder /usr/src/app/requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install --no-cache /wheels/*
+
+# copy project
 COPY ./app .
 
 # collect static files
 RUN python manage.py collectstatic --noinput
 
-# Create a non-root user and switch to it
+# add and run as non-root user
 RUN adduser --disabled-password myuser
 USER myuser
 
-# Expose port (optional)
-EXPOSE 8000
-
-# Set the entrypoint or command to run the application
+# run gunicorn
 CMD gunicorn drf_project.wsgi:application --bind 0.0.0.0:$PORT

@@ -17,6 +17,10 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 COMPOSE_FILE = Path("development") / "docker-compose.yml"
 CONTAINER_NAME = "development-movies-1"
+DB_CONTAINER = "development-movies-db"
+LOCAL_RUFF_EXCLUDE = (
+    "./app/tests/*,./app/movies/migrations/*,tasks.py,./app/drf_project/settings.py"
+)
 
 
 # ----------------------------------------------------------------------
@@ -409,61 +413,8 @@ def destroy(ctx):
 
 
 # --------------------------------------------------
-# TESTS
+# HEROKU TESTS
 # --------------------------------------------------
-@task(
-    help={
-        "keyword": "Keyword expression to filter tests. If provided, it uses pytest's '-k' option. Defaults to None, which runs all tests.",
-        "warnings": "If True, warnings will be enabled. Defaults to False, which disables warnings.",
-        "coverage": "If True, coverage will be run using pytest-cov. Defaults to False, which just runs the tests.",
-        "coverage_report": "If True, creates coverage in html format.",
-    },
-)
-def run_tests(ctx, keyword=None, warnings=False, coverage=False, coverage_report=False):
-    """Run Pytests, with optional coverage reporting.
-
-    This task allows you to run Pytests inside a Docker container, with options to enable coverage
-    reporting and filter tests using keyword expressions. By default, it disables warnings unless
-    warnings=True is passed.
-
-    Parameters
-    ----------
-        - ctx : The context object passed by invoke.
-        - keyword (str, optional) : Keyword expression to filter tests. If provided, it uses pytest's '-k' option.
-                                    Defaults to None, which runs all tests.
-        - warnings (bool, optional) : If True, warnings will be enabled. Defaults to False, which disables warnings.
-        - coverage (bool, optional) : If True, coverage will be run using pytest-cov. Defaults to False, which just runs the tests.
-
-    """
-    # Construct the base pytest command
-    command = f"docker exec -it {CONTAINER_NAME} pytest"
-
-    # Add coverage flag if coverage=True
-    if coverage:
-        command += " --cov=."
-
-    # Create HTML Coverage
-    if coverage_report:
-        command += " --cov=. --cov-report html"
-
-    # Append the keyword expression if provided
-    if keyword:
-        command += f" -k '{keyword}'"
-
-    # Disable warnings if warnings=False
-    if not warnings:
-        command += " -p no:warnings"
-
-    # Run the command
-    ctx.run(command, pty=True)
-
-
-@task
-def open_coverage_report(ctx):
-    command = "open app/htmlcov/index.html"
-    ctx.run(command)
-
-
 @task(
     help={
         "path": "The directory or file to check. Defaults to the current directory ('.').",
@@ -540,8 +491,64 @@ def heroku_format_code(c):
     c.run(f"heroku run 'ruff check . --fix' --app {HEROKU_APP_NAME}", pty=True)
 
 
+# --------------------------------------------------
+# LOCAL TESTS
+# --------------------------------------------------
+@task(
+    help={
+        "keyword": "Keyword expression to filter tests. If provided, it uses pytest's '-k' option. Defaults to None, which runs all tests.",
+        "warnings": "If True, warnings will be enabled. Defaults to False, which disables warnings.",
+        "coverage": "If True, coverage will be run using pytest-cov. Defaults to False, which just runs the tests.",
+        "coverage_report": "If True, creates coverage in html format.",
+    },
+)
+def run_tests(ctx, keyword=None, warnings=False, coverage=False, coverage_report=False):
+    """Run Pytests, with optional coverage reporting.
+
+    This task allows you to run Pytests inside a Docker container, with options to enable coverage
+    reporting and filter tests using keyword expressions. By default, it disables warnings unless
+    warnings=True is passed.
+
+    Parameters
+    ----------
+        - ctx : The context object passed by invoke.
+        - keyword (str, optional) : Keyword expression to filter tests. If provided, it uses pytest's '-k' option.
+                                    Defaults to None, which runs all tests.
+        - warnings (bool, optional) : If True, warnings will be enabled. Defaults to False, which disables warnings.
+        - coverage (bool, optional) : If True, coverage will be run using pytest-cov. Defaults to False, which just runs the tests.
+
+    """
+    # Construct the base pytest command
+    command = f"docker exec -it {CONTAINER_NAME} pytest"
+
+    # Add coverage flag if coverage=True
+    if coverage:
+        command += " --cov=."
+
+    # Create HTML Coverage
+    if coverage_report:
+        command += " --cov=. --cov-report html"
+
+    # Append the keyword expression if provided
+    if keyword:
+        command += f" -k '{keyword}'"
+
+    # Disable warnings if warnings=False
+    if not warnings:
+        command += " -p no:warnings"
+
+    # Run the command
+    ctx.run(command, pty=True)
+
+
 @task
-def local_ruff(c, path=".", auto_format=False):
+def open_coverage_report(ctx):
+    command = "open app/htmlcov/index.html"
+    ctx.run(command)
+
+
+@task
+def local_ruff(c, path=".", auto_format=False, verbose=False):
     """Run Ruff linter on the local environment, excluding specific directories.
 
     Parameters
@@ -549,26 +556,29 @@ def local_ruff(c, path=".", auto_format=False):
         - c : The context object passed by invoke.
         - path (str, optional) : The directory or file to check. Defaults to current directory.
         - auto_format (bool, optional) : If True, Ruff will attempt to fix issues automatically. Defaults to False.
+        - verbose (bool, optional) : If True, Ruff runs in Verbose mode. Defaults to False.
 
     """
     # Base Ruff command for local environment
-    command = f"ruff check {path} --exclude './app/tests/*,./app/movies/migrations/*,tasks.py,./app/drf_project/settings.py'"
+    command = f"ruff check {path} --exclude '{LOCAL_RUFF_EXCLUDE}'"
 
     # Add auto-format option if required
     if auto_format:
         command += " --fix"
+    if verbose:
+        command += " --verbose"
 
     # Run the command
     c.run(command, pty=True)
 
 
 @task
-def local_format_code(c):
-    """Run Black for formatting and Ruff for linting/fixing."""
+def local_autoformat(c):
+    """Run Black for formatting and Ruff for linting/auto-fixing."""
     print("Running Black...")
     c.run("black .")
     print("Running Ruff...")
-    c.run("ruff check . --fix")
+    c.run(f"ruff check . --fix --exclude '{LOCAL_RUFF_EXCLUDE}'")
 
 
 @task
@@ -596,7 +606,23 @@ def makemigrations(ctx):
 @task
 def migrate(ctx):
     """Run 'python manage.py migrate' inside the Docker container."""
-    ctx.run(f"docker exec -it {CONTAINER_NAME} python manage.py migrate", pty=True)
+    ctx.run(
+        f"docker-compose -f {COMPOSE_FILE} exec movies python manage.py migrate",
+        pty=True,
+    )
+
+
+@task
+def load_data(ctx):
+    """Run 'python manage.py loaddata' to load data inside the Docker container."""
+    # Run migrations first
+    migrate(ctx)
+
+    # Load initial data
+    ctx.run(
+        f"docker-compose -f {COMPOSE_FILE} exec movies python manage.py loaddata movies.json",
+        pty=True,
+    )
 
 
 @task

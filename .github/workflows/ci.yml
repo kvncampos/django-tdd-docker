@@ -20,6 +20,7 @@ jobs:
           POSTGRES_DB: users
           POSTGRES_USER: runner
           POSTGRES_PASSWORD: runner
+          DATABASE_URL: ${{ vars.DATABASE_URL}}
         ports:
           - 5432:5432
         options: >-

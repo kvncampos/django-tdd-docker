@@ -9,13 +9,36 @@ on:
       - main
 
 jobs:
-  # Build Stage
-  build:
-    name: Build and Push Dev Docker Image
+  # Export Requirements
+  export-requirements:
+    name: Export Requirements
     runs-on: ubuntu-latest
-    services:
-      docker:
-        image: docker:stable
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          export PATH="$HOME/.local/bin:$PATH"
+
+      - name: Export Requirements
+        run: |
+          poetry export -f requirements.txt --output app/requirements.txt --without-hashes
+          poetry export -f requirements.txt --with dev --output app/requirements-dev.txt --without-hashes
+
+  # Build Dev Docker Image for Testing
+  build-dev-image:
+    name: Build Dev Docker Image
+    runs-on: ubuntu-latest
+    needs: export-requirements
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,23 +52,22 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_API_KEY }}
 
-      - name: Build and Push Dev Docker Image
+      - name: Build Dev Docker Image
         run: |
           docker buildx build \
-            --cache-from ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:latest \
-            --cache-from ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:builder \
-            --build-arg SECRET_KEY=${{ secrets.SECRET_KEY }} \
+            --target builder \
             --platform linux/amd64 \
-            --file ./development/Dockerfile.prod \
-            --tag ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:latest \
-            --push \
-            .
+            --file development/Dockerfile.prod \
+            --build-arg REQUIREMENTS_FILE=requirements-dev.txt \
+            --tag ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev \
+            --push .
 
-  # Test Stage
-  test:
+  # Test and Lint Stage
+  test-and-lint:
     name: Test and Lint with Dev Image
     runs-on: ubuntu-latest
-    needs: build  # Wait for build job to complete
+    needs: build-dev-image
+
     services:
       postgres:
         image: postgres:latest
@@ -60,6 +82,10 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
+    env:
+      DATABASE_URL: ${{ vars.DATABASE_URL}}
+      DJANGO_ALLOWED_HOSTS: ${{ vars.DJANGO_ALLOWED_HOSTS }}
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
 
     steps:
       - name: Docker Hub Login
@@ -70,36 +96,27 @@ jobs:
 
       - name: Pull Dev Docker Image
         run: |
-          docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:latest
-
-      - name: Run Tests Inside Docker Container
-        run: |
+          docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev
           docker run --rm \
             -e DATABASE_URL=${{ vars.DATABASE_URL }} \
             -e DJANGO_ALLOWED_HOSTS=${{ vars.DJANGO_ALLOWED_HOSTS }} \
             -e SECRET_KEY=${{ secrets.SECRET_KEY }} \
-            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:latest \
-            pytest -p no:warnings
-
-      - name: Run Linting Inside Docker Container
-        run: |
-          docker run --rm \
             -v ${{ github.workspace }}/app:/usr/src/app \
-            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:latest \
-            bash -c "flake8 . && black --check . --exclude='migrations|env' && isort . --check-only"
+            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev \
+            pytest -p no:warnings --cov=.
 
-  # Deploy Stage
-  deploy:
-    name: Deploy to Heroku
+  # Build Production Docker Image
+  build-prod-image:
+    name: Build Production Docker Image
     runs-on: ubuntu-latest
-    needs: test  # Wait for test job to complete
-    services:
-      docker:
-        image: docker:stable
+    needs: test-and-lint
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Docker Hub Login
         uses: docker/login-action@v3
@@ -107,19 +124,33 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_API_KEY }}
 
-      - name: Build Docker Image for Heroku
+      - name: Build and Push Prod Docker Image
         run: |
-          docker build \
-            --file ./development/Dockerfile.prod \
-            --build-arg SECRET_KEY=${{ secrets.SECRET_KEY }} \
-            --tag registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web \
-            .
+          docker buildx build \
+            --platform linux/amd64 \
+            --file development/Dockerfile.prod \
+            --build-arg REQUIREMENTS_FILE=requirements.txt \
+            --tag ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:latest \
+            --push .
 
-      - name: Push Docker Image to Heroku
-        run: |
-          docker login -u _ -p ${{ secrets.HEROKU_AUTH_TOKEN }} registry.heroku.com
-          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web
+  # Release Stage
+  release:
+    name: Deploy to Heroku
+    runs-on: ubuntu-latest
+    needs: build-prod-image
 
-      - name: Deploy Image to Heroku
+    steps:
+      - name: Docker Hub Login
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_API_KEY }}
+
+      - name: Pull Prod Docker Image
         run: |
+          docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:latest
+
+      - name: Deploy to Heroku
+        run: |
+          heroku container:push web --app ${{ secrets.HEROKU_APP_NAME }}
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}

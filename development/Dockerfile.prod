@@ -4,6 +4,10 @@ FROM python:3.12.4-slim-bookworm as builder
 # set working directory
 WORKDIR /usr/src/app
 
+# set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
 # install system dependencies
 RUN apt-get update && \
     apt-get -y install gcc postgresql && \
@@ -19,18 +23,4 @@ RUN pip install --no-cache-dir -r /requirements.txt
 # copy the rest of the application code
 COPY ./app .
 
-# collect static files for production
-FROM python:3.12.4-slim-bookworm as prod
-
-WORKDIR /usr/src/app
-
-# copy dependencies from builder
-COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=builder /usr/src/app .
-
-# set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# run gunicorn
 CMD ["gunicorn", "drf_project.wsgi:application", "--bind", "0.0.0.0:$PORT"]

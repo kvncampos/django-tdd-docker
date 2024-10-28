@@ -97,13 +97,26 @@ jobs:
       - name: Pull Dev Docker Image
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev
+
+      - name: Run Tests Inside Docker Container
+        run: |
           docker run --rm \
             -e DATABASE_URL=${{ vars.DATABASE_URL }} \
             -e DJANGO_ALLOWED_HOSTS=${{ vars.DJANGO_ALLOWED_HOSTS }} \
             -e SECRET_KEY=${{ secrets.SECRET_KEY }} \
-            -v ${{ github.workspace }}/app:/usr/src/app \
             ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev \
             pytest -p no:warnings --cov=.
+
+      - name: Run Linting Inside Docker Container
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/app:/usr/src/app \
+            -w /usr/src/app \
+            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev \
+            bash -c "black --check . --exclude 'migrations|env' && \
+                      ruff check . --fix --exclude 'tests/*,movies/migrations/*,tasks.py,drf_project/settings.py'"
+
+
 
   # Build Production Docker Image
   build-prod-image:

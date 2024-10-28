@@ -10,19 +10,23 @@ ENV PYTHONUNBUFFERED 1
 
 # Install system dependencies
 RUN apt-get update \
-  && apt-get -y install gcc postgresql netcat-openbsd \
+  && apt-get -y install netcat-traditional gcc postgresql \
   && apt-get clean
 
-# Copy the requirements.txt file created outside Docker
-COPY ./app/requirements.txt .
+# Install Poetry
+RUN pip install --upgrade pip
+RUN pip install poetry
 
-# Install dependencies using pip
-RUN pip install --no-cache-dir -r ./requirements.txt
+# Copy Poetry files to a persistent location
+COPY ./pyproject.toml ./
 COPY ./poetry.lock ./
 
 # Copy entrypoint.sh to a persistent location
 COPY ../development/entrypoint.sh ./
 RUN chmod +x ./entrypoint.sh
+
+# Install dependencies
+RUN poetry config virtualenvs.create false && poetry install --with dev
 
 # Copy the app directory
 COPY ../app ./

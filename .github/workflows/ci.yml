@@ -179,5 +179,6 @@ jobs:
 
       - name: Release the Image on Heroku
         run: |
+          heroku container:login
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}
 

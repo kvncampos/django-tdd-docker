@@ -133,6 +133,8 @@ jobs:
           password: ${{ secrets.HEROKU_API_KEY }}
 
       - name: Build and Tag Prod Docker Image for Heroku
+        env:
+          DJANGO_ALLOWED_HOSTS: ".herokuapp.com"  # For production
         run: |
           docker build \
             --platform linux/amd64 \

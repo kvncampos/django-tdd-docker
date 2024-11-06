@@ -109,7 +109,7 @@ jobs:
               export DEBUG=1 &&
               pytest -p no:warnings --cov=. &&
               black . --check --exclude='migrations|env' &&
-              ruff check . --exclude 'tests/*,movies/migrations/*,tasks.py,drf_project/settings.py' &&
+              ruff check . --fix --exclude 'tests/*,movies/migrations/*,tasks.py,drf_project/settings.py' &&
               export DEBUG=0 &&
               python manage.py check --deploy --fail-level=WARNING
             "

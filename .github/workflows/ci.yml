@@ -31,6 +31,7 @@ jobs:
         run: |
           poetry export -f requirements.txt --output app/requirements.txt --without-hashes
           poetry export -f requirements.txt --with dev --output app/requirements-dev.txt --without-hashes
+
   # Build Dev Docker Image for Testing
   build-dev-image:
     name: Build Dev Docker Image
@@ -59,6 +60,7 @@ jobs:
             --build-arg REQUIREMENTS_FILE=requirements-dev.txt \
             --tag ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev \
             --push .
+
   # Test and Lint Stage
   test-and-lint:
     name: Test and Lint with Dev Image
@@ -124,7 +126,6 @@ jobs:
       - name: Install Heroku CLI
         run: |
           curl https://cli-assets.heroku.com/install.sh | sh
-
       - name: Docker Login to Heroku Container Registry
         uses: docker/login-action@v3
         with:
@@ -141,14 +142,11 @@ jobs:
             --file development/Dockerfile.prod \
             --build-arg REQUIREMENTS_FILE=requirements.txt \
             --tag registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web .
-
       - name: Push Prod Docker Image to Heroku
         run: |
           docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web
-
       - name: Release to Heroku
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}
-

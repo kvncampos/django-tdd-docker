@@ -131,6 +131,7 @@ jobs:
 
       - name: Build and Push Prod Docker Image
         run: |
+          echo $HEROKU_API_KEY | docker login --username=_ --password-stdin registry.heroku.com
           docker buildx build \
             --platform linux/amd64 \
             --file development/Dockerfile.prod \

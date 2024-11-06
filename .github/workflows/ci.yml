@@ -114,14 +114,26 @@ jobs:
               python manage.py check --deploy --fail-level=WARNING
             "
 
+      - name: Cache Trivy DB
+        uses: actions/cache@v3
+        with:
+          path: ./trivy_cache
+          key: ${{ runner.os }}-trivy-db
+          restore-keys: |
+            ${{ runner.os }}-trivy-db
+
       - name: Security Scan with Trivy
+        env:
+          TRIVY_CACHE_DIR: ./trivy_cache
         run: |
           docker run --rm \
             -v /var/run/docker.sock:/var/run/docker.sock \
+            -v $TRIVY_CACHE_DIR:/root/.cache/trivy \
             aquasec/trivy image \
-            --security-checks vuln \
+            --scanners vuln \
             --severity MEDIUM,HIGH,CRITICAL \
             ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:dev
+
 
 
   # Build Production Docker Image

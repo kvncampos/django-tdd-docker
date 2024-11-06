@@ -164,5 +164,6 @@ jobs:
           echo $HEROKU_API_KEY | docker login --username=_ --password-stdin registry.heroku.com
       - name: Deploy to Heroku
         run: |
+          heroku container:login
           heroku container:push web --app ${{ secrets.HEROKU_APP_NAME }}
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}

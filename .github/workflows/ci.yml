@@ -134,9 +134,10 @@ jobs:
             --platform linux/amd64 \
             --file development/Dockerfile.prod \
             --build-arg REQUIREMENTS_FILE=requirements.txt \
-            --tag registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web:latest .
+            --tag registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web .
 
       - name: Push Prod Docker Image to Heroku
         run: |
-          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web:latest
+          docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web
+          docker login --username=_ --password=$(heroku auth:token) registry.heroku.com
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}

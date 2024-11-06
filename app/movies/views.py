@@ -1,4 +1,6 @@
 # Create your views here.
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.viewsets import ModelViewSet
 
 from .models import Movie
@@ -39,9 +41,35 @@ from .serializers import MovieSerializer
     #         return Response(serializer.data)
 """
 
+# Define the custom request body schema for POST and PUT requests
+movie_request_schema = openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        "title": openapi.Schema(type=openapi.TYPE_STRING, description="Title of the movie"),
+        "genre": openapi.Schema(type=openapi.TYPE_STRING, description="Genre of the movie"),
+        "year": openapi.Schema(type=openapi.TYPE_STRING, description="Release year of the movie"),
+    },
+    required=["title", "genre", "year"]  # Add required fields if needed
+)
 
 class MovieViewSet(ModelViewSet):
     """ViewSet for managing Movie instances."""
 
     serializer_class = MovieSerializer
     queryset = Movie.objects.all()
+
+    @swagger_auto_schema(
+        request_body=movie_request_schema,
+        responses={201: MovieSerializer, 400: "Bad Request"},
+    )
+    def create(self, request, *args, **kwargs): # noqa: ANN001, ANN002, ANN003
+        """Create a new Movie instance."""
+        return super().create(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        request_body=movie_request_schema,
+        responses={200: MovieSerializer, 400: "Bad Request"},
+    )
+    def update(self, request, *args, **kwargs):  # noqa: ANN001, ANN002, ANN003
+        """Update an existing Movie instance."""
+        return super().update(request, *args, **kwargs)

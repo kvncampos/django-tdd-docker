@@ -617,7 +617,7 @@ def makemigrations(ctx):
 def migrate(ctx):
     """Run 'python manage.py migrate' inside the Docker container."""
     ctx.run(
-        f"docker-compose -f {COMPOSE_FILE} exec movies python manage.py migrate",
+        f"docker exec -it {CONTAINER_NAME} python manage.py migrate",
         pty=True,
     )
 
@@ -639,3 +639,34 @@ def load_data(ctx):
 def checks(ctx):
     """Open a shell in the Docker container 'development-movies-1'."""
     ctx.run("pre-commit run --all-files", pty=True)
+
+# --------------------------------------------------
+# LOCAL SECURITY TASKS
+# --------------------------------------------------
+@task
+def bandit(ctx):
+    """Run Bandit to scan codebase for security vulnerabilities, ignoring low-confidence issues."""
+    print("Running Bandit...")
+    # Wrap the command and options in a single string
+    ctx.run("bandit -r . --skip B101,B104,B110 --severity-level medium")
+
+
+@task
+def safety(ctx, full_check=False):
+    """Run Safety to scan for insecure dependencies, ignoring specific known issues."""
+    print("Running Safety...")
+    base_command = "safety check"
+    if not full_check:
+        base_command += " --ignore 37250 --ignore 37251 --full-report"
+    ctx.run(base_command)
+
+@task
+def trivy(ctx):
+    """Run Trivy to scan Docker images for vulnerabilities, excluding low-severity issues."""
+    print("Running Trivy...")
+    ctx.run("docker run --rm -v $(pwd):/app aquasec/trivy image --security-checks vuln --severity MEDIUM,HIGH,CRITICAL aquasec/trivy:latest")
+
+@task(bandit, safety, trivy)
+def security(ctx):
+    """Run all security checks."""
+    print("Running all security scans...")

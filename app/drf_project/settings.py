@@ -33,6 +33,7 @@ ALLOWED_HOSTS = os.environ.get(
     "DJANGO_ALLOWED_HOSTS",
     "localhost 127.0.0.1 [::1]",
 ).split(" ")
+
 if not DEBUG:
     SECURE_HSTS_SECONDS = 3600
     SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -60,6 +61,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "movies",
+    "drf_yasg",
 ]
 
 MIDDLEWARE = [
@@ -173,3 +175,7 @@ STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "movies.CustomUser"
+
+SWAGGER_SETTINGS = {
+    "USE_SESSION_AUTH": False,
+}

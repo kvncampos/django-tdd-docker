@@ -139,28 +139,4 @@ jobs:
       - name: Push Prod Docker Image to Heroku
         run: |
           docker push registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web:latest
-
-
-  # Release Stage
-  release:
-    name: Deploy to Heroku
-    runs-on: ubuntu-latest
-    needs: build-prod-image
-
-    steps:
-      - name: Install Heroku CLI
-        run: |
-          curl https://cli-assets.heroku.com/install.sh | sh
-
-      - name: Docker Login to Heroku Container Registry
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: |
-          docker login --username=_ --password=$(heroku auth:token) registry.heroku.com
-
-      - name: Deploy to Heroku
-        env:
-          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-        run: |
-          heroku container:push web --app ${{ secrets.HEROKU_APP_NAME }}
           heroku container:release web --app ${{ secrets.HEROKU_APP_NAME }}

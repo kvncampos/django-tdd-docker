@@ -135,8 +135,9 @@ jobs:
             --platform linux/amd64 \
             --file development/Dockerfile.prod \
             --build-arg REQUIREMENTS_FILE=requirements.txt \
-            --tag ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}:latest \
+            --tag registry.heroku.com/${{ secrets.HEROKU_APP_NAME }}/web \
             --push .
+
   # Release Stage
   release:
     name: Deploy to Heroku

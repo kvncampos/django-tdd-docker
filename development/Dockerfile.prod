@@ -23,4 +23,12 @@ RUN pip install --no-cache-dir -r /requirements.txt
 # copy the rest of the application code
 COPY ./app .
 
-ENTRYPOINT ["gunicorn", "drf_project.wsgi:application", "--bind", "0.0.0.0:$PORT"]
+# collect static files
+RUN python manage.py collectstatic --noinput
+
+# add and run as non-root user
+RUN adduser --disabled-password myuser
+USER myuser
+
+# run gunicorn
+CMD gunicorn drf_project.wsgi:application --bind 0.0.0.0:$PORT

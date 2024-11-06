@@ -72,7 +72,7 @@ jobs:
             --platform linux/amd64 \
             --file development/Dockerfile.prod \
             --build-arg REQUIREMENTS_FILE=requirements-dev.txt \
-            --tag ${{ secrets.DOCKER_USERNAME }}/myapp:dev \
+            --tag ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}}}:dev \
             --push .
 
       - name: Run Tests and Linting
@@ -82,7 +82,7 @@ jobs:
             -e DATABASE_URL=$DATABASE_URL \
             -e DJANGO_ALLOWED_HOSTS=$DJANGO_ALLOWED_HOSTS \
             -e SECRET_KEY=$SECRET_KEY \
-            ${{ secrets.DOCKER_USERNAME }}/myapp:dev \
+            ${{ secrets.DOCKER_USERNAME }}/${{ secrets.HEROKU_APP_NAME }}}}:dev \
             bash -c "
               export DEBUG=1 &&
               pytest -p no:warnings --cov=. &&

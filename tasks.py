@@ -640,6 +640,7 @@ def checks(ctx):
     """Open a shell in the Docker container 'development-movies-1'."""
     ctx.run("pre-commit run --all-files", pty=True)
 
+
 # --------------------------------------------------
 # LOCAL SECURITY TASKS
 # --------------------------------------------------
@@ -660,11 +661,15 @@ def safety(ctx, full_check=False):
         base_command += " --ignore 37250 --ignore 37251 --full-report"
     ctx.run(base_command)
 
+
 @task
 def trivy(ctx):
     """Run Trivy to scan Docker images for vulnerabilities, excluding low-severity issues."""
     print("Running Trivy...")
-    ctx.run("docker run --rm -v $(pwd):/app aquasec/trivy image --security-checks vuln --severity MEDIUM,HIGH,CRITICAL aquasec/trivy:latest")
+    ctx.run(
+        "docker run --rm -v $(pwd):/app aquasec/trivy image --security-checks vuln --severity MEDIUM,HIGH,CRITICAL aquasec/trivy:latest"
+    )
+
 
 @task(bandit, safety, trivy)
 def security(ctx):

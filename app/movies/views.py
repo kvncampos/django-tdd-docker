@@ -45,12 +45,22 @@ from .serializers import MovieSerializer
 movie_request_schema = openapi.Schema(
     type=openapi.TYPE_OBJECT,
     properties={
-        "title": openapi.Schema(type=openapi.TYPE_STRING, description="Title of the movie"),
-        "genre": openapi.Schema(type=openapi.TYPE_STRING, description="Genre of the movie"),
-        "year": openapi.Schema(type=openapi.TYPE_STRING, description="Release year of the movie"),
+        "title": openapi.Schema(
+            type=openapi.TYPE_STRING,
+            description="Title of the movie",
+        ),
+        "genre": openapi.Schema(
+            type=openapi.TYPE_STRING,
+            description="Genre of the movie",
+        ),
+        "year": openapi.Schema(
+            type=openapi.TYPE_STRING,
+            description="Release year of the movie",
+        ),
     },
-    required=["title", "genre", "year"]  # Add required fields if needed
+    required=["title", "genre", "year"],  # Add required fields if needed
 )
+
 
 class MovieViewSet(ModelViewSet):
     """ViewSet for managing Movie instances."""
@@ -62,7 +72,7 @@ class MovieViewSet(ModelViewSet):
         request_body=movie_request_schema,
         responses={201: MovieSerializer, 400: "Bad Request"},
     )
-    def create(self, request, *args, **kwargs): # noqa: ANN001, ANN002, ANN003
+    def create(self, request, *args, **kwargs):  # noqa: ANN001, ANN002, ANN003
         """Create a new Movie instance."""
         return super().create(request, *args, **kwargs)
 

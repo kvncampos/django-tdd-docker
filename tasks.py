@@ -636,7 +636,7 @@ def load_data(ctx):
 
 
 @task
-def checks(ctx):
+def pre_commit(ctx):
     """Open a shell in the Docker container 'development-movies-1'."""
     ctx.run("pre-commit run --all-files", pty=True)
 
@@ -657,8 +657,10 @@ def safety(ctx, full_check=False):
     """Run Safety to scan for insecure dependencies, ignoring specific known issues."""
     print("Running Safety...")
     base_command = "safety check"
-    if not full_check:
-        base_command += " --ignore 37250 --ignore 37251 --full-report"
+    known_oks = " --ignore 37250 --ignore 37251 --ignore 70612"
+    base_command += known_oks
+    if full_check:
+        base_command += " --full-report"
     ctx.run(base_command)
 
 

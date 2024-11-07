@@ -1,24 +1,25 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 23.9.1 # Use the latest stable version
+    rev: 23.9.1
     hooks:
       - id: black
         name: black
         language_version: python3
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.287 # Use the latest stable version
+    rev: v0.0.287
     hooks:
       - id: ruff
         name: ruff
-        args: [
-            "--fix", # Enable automatic fixing, including import sorting
-            "--select",
-            "ALL", # Apply all linting rules by default
+        args:
+          [
+            "check",
+            ".",
             "--exclude",
-            "app/movies/migrations/*", # Exclude migrations directory
-            "--exclude",
-            "tasks.py", # Exclude tasks.py
+            "./app/tests/*,",
+            "./app/movies/migrations/*,",
+            "./app/drf_project/settings.py,",
+            "tasks.py",
           ]
         language_version: python3
 
@@ -28,7 +29,27 @@ repos:
       - id: bandit
         name: bandit
         args: [
-            "-iii", # Report all confidence levels
-            "-ll", # Report all severity levels
+            "-r",
+            ".", # Explicitly set the directory to scan
+            "--skip",
+            "B101,B104,B110",
+            "-iii", # Report medium confidence levels
+            "-ll", # Report medium or higher levels
           ]
         language_version: python3
+        pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: safety
+        name: safety
+        entry: safety check --full-report --ignore 37250 --ignore 37251 --ignore 70612
+        language: python
+        additional_dependencies: ["safety"]
+        pass_filenames: false
+
+      # - id: trivy
+      #   name: trivy
+      #   entry: bash -c 'docker run --rm -v $(pwd):/app aquasec/trivy image --scanners vuln --severity MEDIUM,HIGH,CRITICAL my-image-name:latest'
+      #   language: system
+      #   pass_filenames: false

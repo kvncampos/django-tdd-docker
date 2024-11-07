@@ -57,7 +57,6 @@ exclude = '''
 # Deprecated settings migrated to the lint section
 line-length = 88
 
-[tool.ruff.lint]
 # Select all rules but apply exclusions
 select = ["ALL"]
 
